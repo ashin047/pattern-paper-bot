@@ -4,7 +4,9 @@ name: paper-bot
 # a few minutes after every 4-hour candle close, then commits the updated records.
 on:
   schedule:
-    - cron: "7 0,4,8,12,16,20 * * *"
+    # GitHub starts scheduled runs late and sometimes drops them, so this fires twice an hour
+    # and the "gate" job below lets only the first run after each 4-hour candle close do the work.
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -16,7 +18,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Has the latest 4-hour candle already been processed? Manual runs always go ahead.
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      go: ${{ steps.check.outputs.go }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, os, time
+          TF = 14_400_000
+          try:
+              done = json.load(open("logs/pattern_positions.json", encoding="utf-8"))["updated"] or 0
+          except Exception:
+              done = 0
+          close = int(time.time() * 1000) // TF * TF          # when the latest 4-hour candle closed
+          print("go=" + ("true" if os.environ["EVENT"] != "schedule" or done < close + 60_000 else "false"))
+          EOF
+          cat "$GITHUB_OUTPUT"
+
   run:
+    needs: gate
+    if: needs.gate.outputs.go == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
