@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  pages: write
 
 concurrency:
   group: paper-bot
@@ -86,3 +87,9 @@ jobs:
           git add -A
           git commit -q -m "Publish chart page"
           git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
+
+      # ask for a rebuild explicitly, in case the push above does not trigger one
+      - name: Refresh website
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds" --silent || true
