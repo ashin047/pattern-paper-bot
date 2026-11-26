@@ -456,7 +456,7 @@ function renderPaper() {
 }
 
 $("#meta").textContent = `16 種 K 線形態，以 4 小時線為主，強勢版另有 8 小時、12 小時、日線。共 ${N_ALL} 個商品。資料產生於 ${fmtDT(DATA.generated)}（台北時間）。全部是回測或模擬資金，沒有真實下單。`;
-let current = "history";
+let current = DATA.paper.positions_updated ? "paper" : "history";      // open on the live paper test when it is running
 const render = k => { current = k; document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.k === k)); (k === "history" ? renderHistory : renderPaper)(); };
 document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => render(b.dataset.k)));
 render(current);

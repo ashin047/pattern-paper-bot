@@ -48,7 +48,8 @@ def main():
     eq = state["equity"]
     out = ["# 形態模擬交易狀態", "",
            f"更新時間：{ts(pos['updated']) if pos['updated'] else '—'}（台北時間）。每 4 小時自動更新一次。",
-           "", "全部是模擬資金，沒有真實下單，也不是投資建議。", ""]
+           "", "全部是模擬資金，沒有真實下單，也不是投資建議。", "",
+           "完整互動圖表（可切換週期、篩選、看回測）：https://ashin047.github.io/pattern-paper-bot/", ""]
 
     n = len(T)
     tot = sum(t["R"] for t in T)
@@ -108,7 +109,7 @@ def main():
         out += ["| 帳戶 | 損益 USDT |", "|---|---|"] + [f"| {k} | {d:+,.0f} |" for d, k in moved]
     else:
         out.append("還沒有帳戶出現損益。")
-    out += ["", "完整圖表在每次執行的 `dashboard` 附件裡（Actions 分頁 → 最新一次執行 → Artifacts），或在電腦上執行 `view_dashboard.bat`。", ""]
+    out += ["", "完整互動圖表：https://ashin047.github.io/pattern-paper-bot/", ""]
     (ROOT / "STATUS.md").write_text("\n".join(out), encoding="utf-8")
     print(f"已寫出 STATUS.md（持倉 {len(P)} 筆，已結束 {n} 筆）")
 

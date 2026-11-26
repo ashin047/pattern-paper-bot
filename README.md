@@ -4,6 +4,8 @@
 
 ## 怎麼看結果
 
+- **完整互動圖表（網頁）**：https://ashin047.github.io/pattern-paper-bot/ 每次執行後自動更新。
+
 - **[STATUS.md](STATUS.md)**：目前持倉、最近的交易、各組比較。每次執行後自動更新，在 GitHub 網站或手機 App 直接看。
 - **[TRADES.md](TRADES.md)**：每一筆已結束交易各一張 K 線圖（用它自己的進場週期，標出進場、止損、目標、出場），依月份分頁。持倉的圖在 STATUS.md 裡。
 - **完整圖表**：Actions 分頁 → 最新一次 `paper-bot` 執行 → Artifacts 裡的 `dashboard`，下載後打開 `dashboard.html`。
