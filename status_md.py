@@ -68,7 +68,7 @@ def main():
     if P:
         out += ["| 商品 | 帳戶 | 方向 | 進場時間 | 進場價 | 現價 | 目前止損 | 目標 | 浮動損益 |", "|---|---|---|---|---|---|---|---|---|"]
         for p in P:
-            tgt = price(p["target"]) if p["target"] is not None else "移動止損"
+            tgt = charts.target_text(p["account"], p["target"], p.get("tp_hit"))
             out.append(f"| {p['symbol'].replace('USDT', '')} | {p['account']} | {SIDE[p['side']]} | {ts(p['t_entry'])} | {price(p['entry'])} | "
                        f"{price(p['last'])} | {price(p['stop'])} | {tgt} | {r_(p['R'])} |")
     else:
@@ -79,11 +79,15 @@ def main():
         for p in CP:
             out += charts.position_md(p)
 
-    out += ["## 規則與週期比較（已結束交易）", "", "| 組別 | 筆數 | 勝率 | 每筆平均 | 合計 |", "|---|---|---|---|---|"]
-    groups = [("4H 原規則", lambda t: "強勢" not in t["pattern"]),
-              ("4H 強勢版", lambda t: "強勢" in t["pattern"] and (t.get("timeframe") or "4H") == "4H"),
-              ("8H 強勢版", lambda t: t.get("timeframe") == "8H"), ("12H 強勢版", lambda t: t.get("timeframe") == "12H"),
-              ("日線 強勢版", lambda t: t.get("timeframe") == "日線")]
+    out += ["## 規則與週期比較（已結束交易）", "",
+            "「強勢版」和「強勢四段停利」做的是同一批進場，只有出場不同：前者全部部位用移動止損；"
+            "後者在 1R、2R、3R 各出 25%，第一次停利後止損移到進場價，最後 25% 用移動止損。", "", "| 組別 | 筆數 | 勝率 | 每筆平均 | 合計 |", "|---|---|---|---|---|"]
+    tf_of = lambda t: t.get("timeframe") or "4H"
+    kind = lambda t: "四段" if "四段" in t["pattern"] else "強勢" if "強勢" in t["pattern"] else "原"
+    groups = [("4H 原規則", lambda t: kind(t) == "原")]
+    groups += [(f"{n} 強勢版（移動止損）", lambda t, n=n: kind(t) == "強勢" and tf_of(t) == n) for n in ("4H", "8H", "12H", "日線")]
+    groups += [(f"{n} 強勢四段停利", lambda t, n=n: kind(t) == "四段" and tf_of(t) == n) for n in ("4H", "8H", "12H", "日線")]
+    groups += [("全部 強勢版（移動止損）", lambda t: kind(t) == "強勢"), ("全部 強勢四段停利", lambda t: kind(t) == "四段")]
     for name, keep in groups:
         g = [t["R"] for t in T if keep(t)]
         out.append(f"| {name} | {len(g)} | {sum(x > 0.05 for x in g) / len(g):.1%} | {r_(sum(g) / len(g))} | {r_(sum(g), 1)} |" if g

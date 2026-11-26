@@ -28,6 +28,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from bot.data import BASE, _get
+from research4 import COST as R_COST
 from research4 import DATA, simulate
 from research7 import atr_series, replay
 
@@ -49,6 +50,8 @@ STRONG = "｜強勢"                     # suffix of the second account kept for
 STRONG_VOL, STRONG_BODY = 1.77, 1.21  # breakout volume / average, breakout candle body / ATR (from research7)
 STRONG_EXIT = (None, None, 0.0, 3.0, 1.0, 96)   # no target; after +1R trail the stop 3 ATR; max 96 candles
 TFS_EXTRA = {"8H": 2, "12H": 3, "日線": 6}   # strong version also runs on these (multiples of 4H), see research10.py
+TP4 = "｜強勢四段"                    # third account: the same strong entries, exit in four parts (research12.py)
+TP4_LEVELS, TP4_FRAC = (1.0, 2.0, 3.0), 0.25   # 25% off at 1R, 2R, 3R; the last 25% runs on the trailing stop
 FUND = ROOT / "data_funding"           # perpetual funding-rate history (see research11.py)
 FUND_API = "https://fapi.binance.com/fapi/v1/fundingRate"
 FUT_NAME = {"SHIB": "1000SHIB"}        # futures tickers that differ from spot
@@ -178,6 +181,47 @@ def aggregate(bars, mult):
     return out
 
 
+def replay_tp(bars, atr, i0, s, entry, stop0, trail=3.0, max_hold=96):
+    """Four-part exit of one strong trade, replayed from the candle after i0 (same rules as research12 '4TP-R+保本'):
+    a quarter is closed at each of 1R, 2R, 3R; after the first one the stop moves to entry; from 1R on the stop
+    also trails 3 ATR behind the best price. Within one candle the stop is checked before any take-profit.
+    -> gross R, cost R, last exit price, ix (exit candle index, None = still open), stop now, parts taken, stopped"""
+    risk = abs(entry - stop0)
+    levels = [entry + s * m * risk for m in TP4_LEVELS]
+    stop, best, armed, left, nxt = stop0, entry, False, 1.0, 0
+    gross, notional = 0.0, entry                      # notional traded per unit, for fees
+    px = ix = None
+    for i in range(i0 + 1, min(len(bars), i0 + 1 + max_hold)):
+        _, o, h, l, c, _ = bars[i]
+        adv, fav = (l, h) if s > 0 else (h, l)
+        if (adv - stop) * s <= 0:
+            px, ix = (stop if (o - stop) * s > 0 else o), i
+            break
+        while nxt < len(levels) and (fav - levels[nxt]) * s >= 0:
+            gross += TP4_FRAC * (levels[nxt] - entry) * s / risk
+            notional += TP4_FRAC * levels[nxt]
+            left -= TP4_FRAC
+            if nxt == 0 and (stop - entry) * s < 0:
+                stop = entry
+            nxt += 1
+        if nxt:
+            armed = True
+        if (fav - best) * s > 0:
+            best = fav
+        if armed:
+            new = best - s * trail * atr[i]
+            if (new - stop) * s > 0:
+                stop = new
+    stopped = px is not None
+    if px is None:
+        last = min(len(bars) - 1, i0 + max_hold)
+        px = bars[last][4]
+        ix = last if last == i0 + max_hold else None      # None: history ends before the trade does
+    gross += left * (px - entry) * s / risk
+    notional += left * px
+    return {"R": gross, "cost": R_COST * notional / risk, "px": px, "ix": ix, "stop": stop, "hit": nxt, "stopped": stopped}
+
+
 def notify(url, text):
     if not url:
         return
@@ -203,12 +247,13 @@ def main():
     sp = LOGS / "pattern_state.json"
     state = json.loads(sp.read_text()) if sp.exists() else {
         "started_at": int(time.time() * 1000), "equity": {k: cfg["start_equity"] for k in PATTERNS}, "entries": [], "exits": []}
-    labels = [k for p in PATTERNS for k in (p, p + STRONG, *(f"{p}{STRONG}｜{n}" for n in TFS_EXTRA))]
+    labels = [k for p in PATTERNS for k in (p, p + STRONG, *(f"{p}{STRONG}｜{n}" for n in TFS_EXTRA),
+                                            p + TP4, *(f"{p}{TP4}｜{n}" for n in TFS_EXTRA))]
     state["equity"] = {k: state["equity"].get(k, cfg["start_equity"]) for k in labels}
     syms = sorted(p.stem for p in DATA.glob("*.csv"))
     extra_path = {p.stem + "USDT": p for d in OOS_DIRS if d.exists() for p in sorted(d.glob("*.csv")) if p.stem + "USDT" not in syms}
     extra = sorted(extra_path)
-    print(f"4H 形態模擬交易（不會下真單）：{len(PATTERNS)} 種形態，多空都有；4H 每種形態兩個帳戶（原規則、強勢版），強勢版另外跑 8H、12H、日線；"
+    print(f"4H 形態模擬交易（不會下真單）：{len(PATTERNS)} 種形態，多空都有；4H 每種形態三個帳戶（原規則、強勢版、強勢四段停利），後兩種另外跑 8H、12H、日線；"
           f"{len(syms) + len(extra)} 個商品，每筆風險 {RISK_PCT}%。Ctrl+C 停止。")
 
     def say(ev):
@@ -225,7 +270,7 @@ def main():
         tid = f"{label}:{sym}:{T['t']}"
         if tid not in state["entries"]:
             state["entries"].append(tid)
-            plan = f"目標 {T['target']:g}" if T["target"] is not None else "到 1R 後用 3 ATR 移動止損"
+            plan = T.get("plan") or (f"目標 {T['target']:g}" if T["target"] is not None else "到 1R 後用 3 ATR 移動止損")
             say({"t": T["t"], "symbol": sym, "pattern": label, "event": "ENTRY",
                  "text": f"〔{label}〕{'做多' if T['s'] > 0 else '做空'}進場 {T['entry']:g}，止損 {T['stop']:g}，{plan}"
                          f"{'，突破有放量' if T['volok'] else ''}，同方向強勢訊號的商品 {T['breadth']} 個"
@@ -235,7 +280,9 @@ def main():
             net = T["R"] - T["cost"] - T.get("fund_R", 0.0)      # after fees, slippage and funding paid
             pnl = state["equity"][label] * RISK_PCT / 100 * net
             state["equity"][label] += pnl
-            if T["target"] is not None:
+            if T.get("why"):
+                why = T["why"]
+            elif T["target"] is not None:
                 why = "到達目標" if T["exit"] == T["target"] else "止損" if net < 0 else "持倉逾時"
             else:
                 why = "止損" if T["R"] <= -0.99 else "移動止損出場" if not T.get("timed") else "持倉逾時"
@@ -275,7 +322,7 @@ def main():
             holding.append(f"{sym.replace('USDT', '')}({label})")
             positions.append({"account": label, "symbol": sym, "timeframe": tfn, "side": "LONG" if T["s"] > 0 else "SHORT",
                               "t_entry": T["t"], "entry": T["entry"], "stop0": T["stop"], "stop": stop_now, "target": T["target"],
-                              "last": last, "R": round(r_now, 3), "breadth": T.get("breadth"),
+                              "last": last, "R": round(r_now, 3), "breadth": T.get("breadth"), "tp_hit": T.get("tp_hit"),
                               "crowding": None if T.get("crowd") is None else round(T["crowd"] * 100, 4),
                               "funding_R": round(T.get("fund_R", 0.0), 4)})
 
@@ -326,6 +373,17 @@ def main():
                     "t_exit": close_t[ix] if ix is not None else None, "R": g, "cost": cost, "volok": True,
                     "timed": ix is not None and ix - i0 >= STRONG_EXIT[5], "breadth": breadth(tfn, t, side, tf_ms), "tf": tfn}
 
+        def tp_trade(bars, atr, close_t, t, side, entry, stop, tfn, tf_ms):
+            """The four-part exit on one strong entry. Funding is counted on the full size for the whole trade (slightly too much)."""
+            i0 = bisect.bisect_left(close_t, t)
+            r = replay_tp(bars, atr, i0, side, entry, stop)
+            hit, rest = r["hit"], "持倉逾時" if not r["stopped"] else "保本出場" if r["px"] == entry else "移動止損出場"
+            return {"stop_now": r["stop"], "t": t, "s": side, "entry": entry, "stop": stop, "target": None, "exit": r["px"],
+                    "t_exit": close_t[r["ix"]] if r["ix"] is not None else None, "R": r["R"], "cost": r["cost"], "volok": True,
+                    "breadth": breadth(tfn, t, side, tf_ms), "tf": tfn, "tp_hit": hit,
+                    "plan": "1R、2R、3R 各出 25%，第一次停利後保本，餘倉用 3 ATR 移動止損",
+                    "why": f"已停利 {hit} 段，餘倉{rest}" if hit else "止損" if r["stopped"] else "持倉逾時"}
+
         for sym, (bars, closed, open_tr) in data.items():
             short = sym.replace("USDT", "")
             atr, close_t = atr_series(bars), [b[0] + TF for b in bars]
@@ -348,7 +406,12 @@ def main():
                         annotate(sym, S)
                         if book(label + STRONG, sym, S):
                             hold(label + STRONG, sym, "4H", S, S["exit"], S["stop_now"], S["R"])
-            # 3) the same strong version on 8H, 12H and daily candles
+                        # 3) the same strong entry, closed in four parts
+                        Q = tp_trade(bars, atr, close_t, T["t"], T["s"], T["entry"], T["stop"], "4H", TF)
+                        annotate(sym, Q)
+                        if book(label + TP4, sym, Q):
+                            hold(label + TP4, sym, "4H", Q, Q["exit"], Q["stop_now"], Q["R"])
+            # 4) both strong versions on 8H, 12H and daily candles
             for tfn, (b2, closed2, open2) in multi[sym].items():
                 tf_ms = TFS_EXTRA[tfn] * TF
                 atr2, ct2 = atr_series(b2), [b[0] + tf_ms for b in b2]
@@ -363,6 +426,11 @@ def main():
                             annotate(sym, S)
                             if book(lab, sym, S):
                                 hold(lab, sym, tfn, S, S["exit"], S["stop_now"], S["R"])
+                            lab = f"{label}{TP4}｜{tfn}"
+                            Q = tp_trade(b2, atr2, ct2, t, side, entry, stop, tfn, tf_ms)
+                            annotate(sym, Q)
+                            if book(lab, sym, Q):
+                                hold(lab, sym, tfn, Q, Q["exit"], Q["stop_now"], Q["R"])
         sp.write_text(json.dumps(state))
         (LOGS / "pattern_positions.json").write_text(
             json.dumps({"updated": int(time.time() * 1000), "positions": positions}, ensure_ascii=False), encoding="utf-8")

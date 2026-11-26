@@ -231,6 +231,9 @@ function hBars(host, items, selected, onPick) {
 }
 
 /* ---------- candles around one paper trade or open position ---------- */
+const is4 = o => (o.account || o.pattern || "").includes("四段");
+const tgtText = o => o.target != null ? fmtP(o.target) : is4(o) ? "1R、2R、3R 各出 25%" + (o.tp_hit != null ? `（已出 ${o.tp_hit} 段）` : "") : "移動止損";
+const tpLevels = o => { if (!is4(o)) return []; const s = o.side === "LONG" ? 1 : -1, risk = Math.abs(o.entry - (o.stop0 ?? o.stop)); return [1, 2, 3].map(k => o.entry + s * k * risk); };
 const TFMS = { "4H": 14400000, "8H": 28800000, "12H": 43200000, "日線": 86400000 };
 function candleChart(host, t, tfn) {
   const h = 330, m = { l: 62, r: 108, t: 12, b: 24 }, ms = TFMS[tfn] || TF;
@@ -238,7 +241,8 @@ function candleChart(host, t, tfn) {
   const cs = Array.isArray(t.candles) ? t.candles : (t.candles[tfn] || []);
   if (!cs.length) { host.innerHTML = '<div class="empty">這個週期沒有足夠的 K 線資料。</div>'; return; }
   const moved = t.stop0 != null && t.stop0 !== t.stop;
-  const lv = [t.stop, t.entry, t.exit, t.target, moved ? t.stop0 : null].filter(v => v != null);
+  const tps = tpLevels(t);
+  const lv = [t.stop, t.entry, t.exit, t.target, moved ? t.stop0 : null, ...tps].filter(v => v != null);
   let lo = Math.min(...lv, ...cs.map(c => c[3])), hi = Math.max(...lv, ...cs.map(c => c[2]));
   const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
   const y = yAxis(svg, w, m, lo, hi, h, fmtP);
@@ -255,7 +259,8 @@ function candleChart(host, t, tfn) {
   });
   const lines = [{ v: t.entry, s: "進場", c: "var(--text)", d: "" }, { v: t.stop, s: moved ? "目前止損" : "止損", c: "var(--bad)", d: "4 3" },
                  { v: moved ? t.stop0 : null, s: "原止損", c: "var(--muted)", d: "2 4" },
-                 { v: t.target, s: "目標", c: "var(--good)", d: "4 3" }, { v: t.exit, s: "出場", c: "var(--long)", d: "1 3" }]
+                 { v: t.target, s: "目標", c: "var(--good)", d: "4 3" }, { v: t.exit, s: "出場", c: "var(--long)", d: "1 3" },
+                 ...tps.map((v, k) => ({ v, s: `停利${k + 1}`, c: "var(--good)", d: "4 3" }))]
     .filter(l => l.v != null).map(l => ({ ...l, ly: y(l.v) })).sort((a, b) => a.ly - b.ly);
   lines.forEach((l, i) => { if (i && l.ly - lines[i - 1].ly < 13) l.ly = lines[i - 1].ly + 13; });
   for (const l of lines) {
@@ -388,7 +393,7 @@ function holdingsHtml(P) {
     }</tbody></table></div>
     <h2 style="margin-top:14px">逐筆持倉</h2><p class="sub">點一列看那筆持倉的 K 線圖。</p>
     <div class="tablewrap"><table><thead><tr><th>商品</th><th>帳戶</th><th>方向</th><th>進場時間</th><th>已持有</th><th class="num">進場價</th><th class="num">現價</th><th class="num">目前止損</th><th class="num">目標</th><th class="num">浮動損益</th></tr></thead><tbody id="ptb">${
-      (P._flat = coins.flatMap(c => c.ps)).map((p, i) => `<tr class="pick" data-i="${i}"><td>${p.symbol.replace("USDT", "")}</td><td>${p.account}${p.timeframe !== "4H" && !p.account.includes(p.timeframe) ? "｜" + p.timeframe : ""}</td><td>${SIDE[p.side]}</td><td>${fmtDT(p.t_entry)}</td><td>${hrs(p.t_entry)}</td><td class="num">${fmtP(p.entry)}</td><td class="num">${fmtP(p.last)}（${pct(p.last, p.entry)}）</td><td class="num">${fmtP(p.stop)}${p.stop !== p.stop0 ? "（已移動）" : ""}</td><td class="num">${p.target != null ? fmtP(p.target) : "移動止損"}</td><td class="num"><span class="${cls(p.R)}">${fmtR(p.R)}</span></td></tr>`).join("")
+      (P._flat = coins.flatMap(c => c.ps)).map((p, i) => `<tr class="pick" data-i="${i}"><td>${p.symbol.replace("USDT", "")}</td><td>${p.account}${p.timeframe !== "4H" && !p.account.includes(p.timeframe) ? "｜" + p.timeframe : ""}</td><td>${SIDE[p.side]}</td><td>${fmtDT(p.t_entry)}</td><td>${hrs(p.t_entry)}</td><td class="num">${fmtP(p.entry)}</td><td class="num">${fmtP(p.last)}（${pct(p.last, p.entry)}）</td><td class="num">${fmtP(p.stop)}${p.stop !== p.stop0 ? "（已移動）" : ""}</td><td class="num">${tgtText(p)}</td><td class="num"><span class="${cls(p.R)}">${fmtR(p.R)}</span></td></tr>`).join("")
     }</tbody></table></div>
     <h2 id="pt" style="margin-top:14px"></h2><div class="facts" id="pf"></div>
     <div class="seg" id="pcseg" style="margin:6px 0"></div>${CHART_LEGEND}<div class="chart" id="pc"></div></div>`;
@@ -404,7 +409,7 @@ function renderPaper() {
     return `<tr><td>${p}</td><td>${sd > 0 ? "做多" : sd < 0 ? "做空" : ""}</td><td class="num">${s.n}</td><td class="num">${s.n ? `<span class="${cls(s.r)}">${fmtR(s.r)}</span>` : "—"}</td><td class="num">${e.toLocaleString("en-US", { maximumFractionDigits: 0 })}</td></tr>`; }).join("");
   const events = P.events.length ? P.events.map(e => `<div><time>${fmtDT(e.t)}</time><b>${e.symbol.replace("USDT", "")}</b> ${e.text}</div>`).join("") : '<div class="empty">還沒有進出場紀錄。</div>';
   view.innerHTML = `
-    <p class="sub">${P.started_at ? `從 ${fmtDT(P.started_at)}（台北時間）開始實測。` : "模擬交易尚未啟動。"}每個帳戶各自從 ${DATA.start_equity.toLocaleString("en-US")} USDT 開始：4 小時線每種形態有原規則和「｜強勢」兩個帳戶（強勢＝只做放量的強勢突破，到 1R 後改用移動止損）；強勢版另外在 8 小時、12 小時、日線各有一個帳戶。每筆風險 ${DATA.risk_pct}%，沒有真實下單。</p>
+    <p class="sub">${P.started_at ? `從 ${fmtDT(P.started_at)}（台北時間）開始實測。` : "模擬交易尚未啟動。"}每個帳戶各自從 ${DATA.start_equity.toLocaleString("en-US")} USDT 開始：4 小時線每種形態有原規則、「｜強勢」、「｜強勢四段」三個帳戶（強勢＝只做放量的強勢突破，到 1R 後改用移動止損）；「｜強勢四段」做的是和強勢版同一批進場，但分四段出場：1R、2R、3R 各出 25%，第一次停利後止損移到進場價，最後 25% 用移動止損。這兩種強勢帳戶另外在 8 小時、12 小時、日線各有一個。每筆風險 ${DATA.risk_pct}%，沒有真實下單。</p>
     <div class="kpis">
       <div class="kpi"><b>${T.length}</b><span>已結束交易</span></div>
       <div class="kpi"><b>${P.positions_updated ? P.positions.length : P.open.length}</b><span>持倉中</span></div>
@@ -425,11 +430,18 @@ function renderPaper() {
       <div class="tablewrap"><table><thead><tr><th>組別</th><th class="num">已結束筆數</th><th class="num">勝率</th><th class="num">每筆平均</th><th class="num">合計</th></tr></thead><tbody>${
         [["回測為負的組合", t => t.neg_combo], ["其餘組合", t => !t.neg_combo],
          ["資金費率明顯擁擠（≥ 0.02%）", t => t.crowding != null && t.crowding >= 0.02], ["資金費率不擁擠", t => t.crowding != null && t.crowding < 0.02],
-         ["強勢版，孤單訊號", t => t.pattern.includes("強勢") && t.breadth === 1], ["強勢版，有其他商品同步", t => t.pattern.includes("強勢") && t.breadth >= 2]
+         ["強勢版，孤單訊號", t => t.pattern.includes("強勢") && !is4(t) && t.breadth === 1], ["強勢版，有其他商品同步", t => t.pattern.includes("強勢") && !is4(t) && t.breadth >= 2]
         ].map(([name, keep]) => { const g = T.filter(keep), r = g.reduce((a, t) => a + t.R_net, 0);
           return `<tr><td>${name}</td><td class="num">${g.length}</td><td class="num">${g.length ? (g.filter(t => t.R_net > 0.05).length / g.length * 100).toFixed(1) + "%" : "—"}</td><td class="num">${g.length ? `<span class="${cls(r)}">${fmtR(r / g.length)}</span>` : "—"}</td><td class="num">${g.length ? `<span class="${cls(r)}">${fmtR(r, 1)}</span>` : "—"}</td></tr>`; }).join("")
       }</tbody></table></div>
       <p class="note">筆數少的時候兩組的差距沒有意義，至少各累積一百筆再看。</p></div>` : ""}
+    <div class="card"><h2>出場方式比較：同一批強勢進場</h2>
+      <p class="sub">兩種帳戶的進場完全相同，只有出場不同。回測（68 個商品、2018 至今）裡四段停利的勝率高 4 到 5 個百分點、結果較平穩，每筆平均差不多；這裡看實測是否一樣。持倉中的不算在內，所以兩邊已結束的筆數可能不同。</p>
+      <div class="tablewrap"><table><thead><tr><th>出場方式</th><th class="num">已結束筆數</th><th class="num">勝率</th><th class="num">每筆平均</th><th class="num">合計</th></tr></thead><tbody>${
+        [["強勢版：全部部位用移動止損", t => t.pattern.includes("強勢") && !is4(t)], ["強勢四段：1R、2R、3R 各出 25%，餘倉移動止損", is4]
+        ].map(([name, keep]) => { const g = T.filter(keep), r = g.reduce((a, t) => a + t.R_net, 0);
+          return `<tr><td>${name}</td><td class="num">${g.length}</td><td class="num">${g.length ? (g.filter(t => t.R_net > 0.05).length / g.length * 100).toFixed(1) + "%" : "—"}</td><td class="num">${g.length ? `<span class="${cls(r)}">${fmtR(r / g.length)}</span>` : "—"}</td><td class="num">${g.length ? `<span class="${cls(r)}">${fmtR(r, 1)}</span>` : "—"}</td></tr>`; }).join("")
+      }</tbody></table></div></div>
     <div class="half">
       <div class="card"><h2>各形態模擬帳戶</h2><div class="tablewrap"><table>
         <thead><tr><th>帳戶</th><th>方向</th><th class="num">筆數</th><th class="num">合計</th><th class="num">權益 USDT</th></tr></thead><tbody>${accRows || '<tr><td colspan="5" class="empty">尚無資料</td></tr>'}</tbody></table></div></div>
@@ -438,7 +450,7 @@ function renderPaper() {
   if (P._flat && P._flat.length && $("#ptb")) {
     const pickP = i => { const p = P._flat[i];
       $("#pt").textContent = `${p.symbol} ${p.account}（${SIDE[p.side]}，持倉中）· 進場 ${fmtDT(p.t_entry)}`;
-      $("#pf").innerHTML = `<span>進場 <b>${fmtP(p.entry)}</b></span><span>現價 <b>${fmtP(p.last)}</b></span><span>目前止損 <b>${fmtP(p.stop)}</b>${p.stop !== p.stop0 ? `（原本 ${fmtP(p.stop0)}）` : ""}</span><span>目標 <b>${p.target != null ? fmtP(p.target) : "移動止損"}</b></span><span>浮動損益 <b class="${cls(p.R)}">${fmtR(p.R)}</b></span>${p.crowding != null ? `<span>資金費率擁擠度 <b>${sgn(p.crowding, 3)}%</b></span>` : ""}${p.crowding != null && p.funding_R != null ? `<span>資金費率累計 <b>${fmtR(-p.funding_R)}</b>（正數是收到，負數是付出）</span>` : ""}${btText(p)}${p.neg_combo ? "<span>屬於回測為負的組合</span>" : ""}`;
+      $("#pf").innerHTML = `<span>進場 <b>${fmtP(p.entry)}</b></span><span>現價 <b>${fmtP(p.last)}</b></span><span>目前止損 <b>${fmtP(p.stop)}</b>${p.stop !== p.stop0 ? `（原本 ${fmtP(p.stop0)}）` : ""}</span><span>目標 <b>${tgtText(p)}</b></span><span>浮動損益 <b class="${cls(p.R)}">${fmtR(p.R)}</b></span>${p.crowding != null ? `<span>資金費率擁擠度 <b>${sgn(p.crowding, 3)}%</b></span>` : ""}${p.crowding != null && p.funding_R != null ? `<span>資金費率累計 <b>${fmtR(-p.funding_R)}</b>（正數是收到，負數是付出）</span>` : ""}${btText(p)}${p.neg_combo ? "<span>屬於回測為負的組合</span>" : ""}`;
       showChart($("#pcseg"), $("#pc"), { ...p, t_exit: null, exit: null });
       document.querySelectorAll("#ptb tr").forEach(r => r.classList.toggle("on", +r.dataset.i === i)); };
     $("#ptb").addEventListener("click", e => { const r = e.target.closest("tr"); if (r) pickP(+r.dataset.i); });
@@ -448,7 +460,7 @@ function renderPaper() {
   $("#tb").innerHTML = T.map((t, i) => `<tr class="pick" data-i="${i}"><td>${fmtDT(t.t_entry)}</td><td>${t.symbol.replace("USDT", "")}</td><td>${t.pattern}</td><td>${SIDE[t.side]}</td><td class="num">${t.breadth ?? ""}</td><td class="num"><span class="${cls(t.R_net)}">${fmtR(t.R_net)}</span></td><td>${t.reason}</td></tr>`).reverse().join("");
   const pickT = i => { const t = T[i];
     $("#tt").textContent = `${t.symbol} ${t.pattern}（${SIDE[t.side]}）· ${fmtD(t.t_entry)}`;
-    $("#tf").innerHTML = `<span>進場 <b>${fmtP(t.entry)}</b></span><span>止損 <b>${fmtP(t.stop)}</b></span><span>目標 <b>${t.target != null ? fmtP(t.target) : "移動止損"}</b></span><span>出場 <b>${fmtP(t.exit)}</b>（${t.reason}）</span><span>結果 <b class="${cls(t.R_net)}">${fmtR(t.R_net)}</b></span><span>損益 <b>${fmtM(t.pnl)}</b> USDT</span><span>${+t.volume_confirmed ? "突破有放量" : "突破未放量"}</span>${t.breadth != null && t.breadth !== "" ? `<span>同方向強勢訊號的商品 <b>${t.breadth}</b> 個</span>` : ""}${t.crowding != null ? `<span>資金費率擁擠度 <b>${sgn(t.crowding, 3)}%</b></span>` : ""}${t.crowding != null && t.funding_R != null ? `<span>資金費率 <b>${fmtR(-t.funding_R)}</b>（正數是收到，負數是付出）</span>` : ""}${btText(t)}${t.neg_combo ? "<span>屬於回測為負的組合</span>" : ""}`;
+    $("#tf").innerHTML = `<span>進場 <b>${fmtP(t.entry)}</b></span><span>止損 <b>${fmtP(t.stop)}</b></span><span>目標 <b>${tgtText(t)}</b></span><span>出場 <b>${fmtP(t.exit)}</b>（${t.reason}）</span><span>結果 <b class="${cls(t.R_net)}">${fmtR(t.R_net)}</b></span><span>損益 <b>${fmtM(t.pnl)}</b> USDT</span><span>${+t.volume_confirmed ? "突破有放量" : "突破未放量"}</span>${t.breadth != null && t.breadth !== "" ? `<span>同方向強勢訊號的商品 <b>${t.breadth}</b> 個</span>` : ""}${t.crowding != null ? `<span>資金費率擁擠度 <b>${sgn(t.crowding, 3)}%</b></span>` : ""}${t.crowding != null && t.funding_R != null ? `<span>資金費率 <b>${fmtR(-t.funding_R)}</b>（正數是收到，負數是付出）</span>` : ""}${btText(t)}${t.neg_combo ? "<span>屬於回測為負的組合</span>" : ""}`;
     showChart($("#ccseg"), $("#cc"), t);
     document.querySelectorAll("#tb tr").forEach(r => r.classList.toggle("on", +r.dataset.i === i)); };
   $("#tb").addEventListener("click", e => { const r = e.target.closest("tr"); if (r) pickT(+r.dataset.i); });

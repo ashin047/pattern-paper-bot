@@ -62,7 +62,15 @@ def when(ms, day_only=False):
     return datetime.fromtimestamp(ms / 1000, tz=TPE).strftime("%m-%d" if day_only else "%m-%d %H:%M")
 
 
-def svg_chart(title, symbol, tfn, side, t_entry, t_exit, entry, stop, target, exit_px, stop0=None):
+def target_text(label, target, tp_hit=None):
+    if target is not None:
+        return price(target)
+    if "四段" in label:
+        return "1R、2R、3R 各出 25%" + (f"（已出 {tp_hit} 段）" if tp_hit is not None else "")
+    return "移動止損"
+
+
+def svg_chart(title, symbol, tfn, side, t_entry, t_exit, entry, stop, target, exit_px, stop0=None, tps=()):
     """-> SVG text, or None when there is no candle data for this coin."""
     ts, bars = bars_for(symbol, tfn)
     if not bars:
@@ -72,7 +80,7 @@ def svg_chart(title, symbol, tfn, side, t_entry, t_exit, entry, stop, target, ex
     i_x = len(bars) - 1 if t_exit is None else max(i_e, min(len(bars) - 1, bisect_left(ts, t_exit - tf)))
     a, b = max(0, i_e - 45), min(len(bars), i_x + 11)
     cs = bars[a:b]
-    levels = [v for v in (entry, stop, target, exit_px, stop0) if v is not None]
+    levels = [v for v in (entry, stop, target, exit_px, stop0, *tps) if v is not None]
     lo, hi = min(min(c[3] for c in cs), *levels), max(max(c[2] for c in cs), *levels)
     pad = (hi - lo) * 0.06 or hi * 0.01
     lo, hi = lo - pad, hi + pad
@@ -101,7 +109,8 @@ def svg_chart(title, symbol, tfn, side, t_entry, t_exit, entry, stop, target, ex
     out.append(f'<path d="{"".join(body[UP])}" stroke="{UP}" fill="#ffffff"/><path d="{"".join(body[DOWN])}" stroke="{DOWN}" fill="{DOWN}"/>')
     moved = stop0 is not None and stop0 != stop
     lines = [("進場", entry, INK, ""), ("目前止損" if moved else "止損", stop, DOWN, "5 3"), ("原止損", stop0 if moved else None, MUTED, "2 4"),
-             ("目標", target, UP, "5 3"), ("出場", exit_px, "#2a78d6", "1 3")]
+             ("目標", target, UP, "5 3"), ("出場", exit_px, "#2a78d6", "1 3"),
+             *((f"停利{k + 1}", v, UP, "5 3") for k, v in enumerate(tps))]
     lines = sorted(((y(v), n, v, c, d) for n, v, c, d in lines if v is not None))
     ly_prev = -99
     for yy, name, v, col, dash in lines:
@@ -126,6 +135,14 @@ def svg_chart(title, symbol, tfn, side, t_entry, t_exit, entry, stop, target, ex
     out.append(f'<text x="{W - MR + 6}" y="{H - 7}" fill="{MUTED}">{tfn} K 棒 · 台北時間</text>')
     out.append("</svg>")
     return "\n".join(out)
+
+
+def tp_levels(label, side, entry, stop0):
+    """Take-profit prices of the four-part account (1R, 2R, 3R); nothing for the other accounts."""
+    if "四段" not in label:
+        return ()
+    s = 1 if side == "LONG" else -1
+    return tuple(entry + s * k * abs(entry - stop0) for k in (1, 2, 3))
 
 
 def file_name(label, symbol, tfn, t_entry):
@@ -161,7 +178,8 @@ def build(P, T):
     open_dir.mkdir(parents=True)
     for p in P:
         title = f"{p['symbol'].replace('USDT', '')} · {p['account']} · {SIDE[p['side']]} · 持倉中"
-        svg = svg_chart(title, p["symbol"], p["timeframe"], p["side"], p["t_entry"], None, p["entry"], p["stop"], p["target"], None, p.get("stop0"))
+        svg = svg_chart(title, p["symbol"], p["timeframe"], p["side"], p["t_entry"], None, p["entry"], p["stop"], p["target"], None, p.get("stop0"),
+                        tp_levels(p["account"], p["side"], p["entry"], p.get("stop0") or p["stop"]))
         name = file_name(p["account"], p["symbol"], p["timeframe"], p["t_entry"])
         if svg:
             (open_dir / name).write_text(svg, encoding="utf-8")
@@ -173,7 +191,8 @@ def build(P, T):
         path = OUT / "closed" / month / name
         if not path.exists():
             title = f"{t['symbol'].replace('USDT', '')} · {t['pattern']} · {SIDE[t['side']]} · {t['R_net']:+.2f}R（{t['reason']}）"
-            svg = svg_chart(title, t["symbol"], t["timeframe"], t["side"], t["t_entry"], t["t_exit"], t["entry"], t["stop"], t["target"], t["exit"])
+            svg = svg_chart(title, t["symbol"], t["timeframe"], t["side"], t["t_entry"], t["t_exit"], t["entry"], t["stop"], t["target"], t["exit"],
+                            tps=tp_levels(t["pattern"], t["side"], t["entry"], t["stop"]))
             if svg:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(svg, encoding="utf-8")
@@ -182,7 +201,7 @@ def build(P, T):
 
 def trade_md(t, prefix=""):
     """One closed trade as Markdown: a heading, the facts, the chart."""
-    tgt = price(t["target"]) if t["target"] is not None else "移動止損"
+    tgt = target_text(t["pattern"], t["target"])
     out = [f"### {t['symbol'].replace('USDT', '')} · {t['pattern']} · {SIDE[t['side']]} · {t['R_net']:+.2f}R", "",
            f"{t['timeframe']} 週期｜進場 {when(t['t_entry'])} @ {price(t['entry'])}｜止損 {price(t['stop'])}｜目標 {tgt}｜"
            f"出場 {when(t['t_exit'])} @ {price(t['exit'])}（{t['reason']}）", ""]
@@ -191,7 +210,7 @@ def trade_md(t, prefix=""):
 
 
 def position_md(p):
-    tgt = price(p["target"]) if p["target"] is not None else "移動止損"
+    tgt = target_text(p["account"], p["target"], p.get("tp_hit"))
     out = [f"### {p['symbol'].replace('USDT', '')} · {p['account']} · {SIDE[p['side']]} · 浮動 {p['R']:+.2f}R", "",
            f"{p['timeframe']} 週期｜進場 {when(p['t_entry'])} @ {price(p['entry'])}｜現價 {price(p['last'])}｜目前止損 {price(p['stop'])}｜目標 {tgt}", ""]
     out.append(f"![{p['symbol']} {p['account']}]({p['chart']})" if p["chart"] else "（沒有這個商品的 K 線資料，無法畫圖）")
