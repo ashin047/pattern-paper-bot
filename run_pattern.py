@@ -51,6 +51,7 @@ STRONG_VOL, STRONG_BODY = 1.77, 1.21  # breakout volume / average, breakout cand
 STRONG_EXIT = (None, None, 0.0, 3.0, 1.0, 96)   # no target; after +1R trail the stop 3 ATR; max 96 candles
 TFS_EXTRA = {"8H": 2, "12H": 3, "日線": 6}   # strong version also runs on these (multiples of 4H), see research10.py
 TP4 = "｜強勢四段"                    # third account: the same strong entries, exit in four parts (research12.py)
+TP4B = "｜四段"                       # fourth account: every original-rule entry with the same four-part exit (research15.py)
 TP4_LEVELS, TP4_FRAC = (1.0, 2.0, 3.0), 0.25   # 25% off at 1R, 2R, 3R; the last 25% runs on the trailing stop
 FUND = ROOT / "data_funding"           # perpetual funding-rate history (see research11.py)
 FUND_API = "https://fapi.binance.com/fapi/v1/fundingRate"
@@ -247,13 +248,13 @@ def main():
     sp = LOGS / "pattern_state.json"
     state = json.loads(sp.read_text()) if sp.exists() else {
         "started_at": int(time.time() * 1000), "equity": {k: cfg["start_equity"] for k in PATTERNS}, "entries": [], "exits": []}
-    labels = [k for p in PATTERNS for k in (p, p + STRONG, *(f"{p}{STRONG}｜{n}" for n in TFS_EXTRA),
+    labels = [k for p in PATTERNS for k in (p, p + TP4B, p + STRONG, *(f"{p}{STRONG}｜{n}" for n in TFS_EXTRA),
                                             p + TP4, *(f"{p}{TP4}｜{n}" for n in TFS_EXTRA))]
     state["equity"] = {k: state["equity"].get(k, cfg["start_equity"]) for k in labels}
     syms = sorted(p.stem for p in DATA.glob("*.csv"))
     extra_path = {p.stem + "USDT": p for d in OOS_DIRS if d.exists() for p in sorted(d.glob("*.csv")) if p.stem + "USDT" not in syms}
     extra = sorted(extra_path)
-    print(f"4H 形態模擬交易（不會下真單）：{len(PATTERNS)} 種形態，多空都有；4H 每種形態三個帳戶（原規則、強勢版、強勢四段停利），後兩種另外跑 8H、12H、日線；"
+    print(f"4H 形態模擬交易（不會下真單）：{len(PATTERNS)} 種形態，多空都有；4H 每種形態四個帳戶（原規則、原規則四段停利、強勢版、強勢四段停利），後兩種另外跑 8H、12H、日線；"
           f"{len(syms) + len(extra)} 個商品，每筆風險 {RISK_PCT}%。Ctrl+C 停止。")
 
     def say(ev):
@@ -399,6 +400,12 @@ def main():
                     if book(label, sym, T):
                         last = bars[-1][4]
                         hold(label, sym, "4H", T, last, T["stop"], (last - T["entry"]) * T["s"] / abs(T["entry"] - T["stop"]))
+                    # 1b) the same original-rule entry, closed in four parts instead of at the pattern target
+                    B = tp_trade(bars, atr, close_t, T["t"], T["s"], T["entry"], T["stop"], "4H", TF)
+                    B["volok"] = T["volok"]
+                    annotate(sym, B)
+                    if book(label + TP4B, sym, B):
+                        hold(label + TP4B, sym, "4H", B, B["exit"], B["stop_now"], B["R"])
                     # 2) strong-breakout version on 4H: same entry, only if the breakout candle is big and on high
                     #    volume; no fixed target: once 1R ahead, trail the stop 3 ATR behind the best price
                     if strong_ok(T["feat"]):

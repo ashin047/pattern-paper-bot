@@ -112,7 +112,7 @@ def backtest_by_combo():
 
 def combo_key(label, timeframe, symbol):
     parts = label.split("｜")
-    return ("強勢" if len(parts) > 1 else "原規則", timeframe or "4H", symbol, parts[0])
+    return ("強勢" if "強勢" in label else "原規則", timeframe or "4H", symbol, parts[0])
 
 
 def paper():

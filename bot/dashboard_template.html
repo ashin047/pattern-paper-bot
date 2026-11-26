@@ -439,7 +439,7 @@ const PV = { sec: "overview", pos: 0, trade: null, res: "all", kind: "all" };
 const TFX = ["8H", "12H", "日線"];
 const coin = x => x.replace("USDT", "");
 const chip = side => `<span class="chip"><i style="background:var(--${side === "LONG" ? "long" : "short"})"></i>${SIDE[side]}</span>`;
-const kindOf = n => n.includes("四段") ? "tp4" : n.includes("強勢") ? "strong" : "base";
+const kindOf = n => n.includes("強勢四段") ? "tp4" : n.includes("四段") ? "base4" : n.includes("強勢") ? "strong" : "base";
 const acctName = o => { const a = o.account || o.pattern, tf = o.timeframe || "4H"; return tf !== "4H" && !a.includes(tf) ? a + "｜" + tf : a; };
 const span = (a, b) => { const h = Math.max(0, (b - a) / 3600e3); return h >= 48 ? (h / 24).toFixed(1) + " 天" : h.toFixed(0) + " 小時"; };
 const rSpan = (v, d = 2) => `<span class="${cls(v)}">${fmtR(v, d)}</span>`;
@@ -470,10 +470,11 @@ function paperOverview(P, T) {
     </div>
     ${n ? `<div class="card"><h2>已結束交易的累計結果</h2><p class="sub">依出場時間把每筆結果加總，單位 R，已扣成本與資金費率。</p><div class="chart" id="pcum"></div></div>` : ""}
     <div class="half">
-      <div class="card"><h2>三種帳戶比較</h2>
-        <p class="sub">強勢版和強勢四段做的是同一批進場，只有出場不同。持倉中的不算在內。</p>
-        ${groupTable([["原規則：目標是形態等幅", of("base")], ["強勢版：全部部位用移動止損", of("strong")], ["強勢四段：1R、2R、3R 各出 25%，餘倉移動止損", of("tp4")]])}
-        <p class="note">回測裡四段停利的勝率高 4 到 5 個百分點、結果較平穩，每筆平均差不多。至少各累積一百筆再比較。</p></div>
+      <div class="card"><h2>四種帳戶比較</h2>
+        <p class="sub">原規則的兩種是同一批進場（每個形態突破），強勢的兩種也是同一批進場（只做放量的強勢突破）；各自只有出場不同。持倉中的不算在內。</p>
+        ${groupTable([["原規則：目標是形態等幅", of("base")], ["原規則四段：1R、2R、3R 各出 25%，餘倉移動止損", of("base4")],
+          ["強勢版：全部部位用移動止損", of("strong")], ["強勢四段：1R、2R、3R 各出 25%，餘倉移動止損", of("tp4")]])}
+        <p class="note">回測：四段停利用在強勢訊號上，勝率高 4 到 5 個百分點、每筆平均差不多；用在全部訊號上，勝率高約 6 個百分點，但每筆平均沒有比較好，而且全部訊號本身的優勢接近零。至少各累積一百筆再比較。</p></div>
       ${P.neg_frozen ? `<div class="card"><h2>事先標記的條件</h2>
         <p class="sub">回測時發現可能比較差的三種情況，門檻在看到實測結果前就固定。只分組比較，沒有刪掉任何交易。</p>
         ${groupTable([["回測為負的組合", T.filter(t => t.neg_combo)], ["其餘組合", T.filter(t => !t.neg_combo)],
@@ -522,7 +523,7 @@ function paperClosed(P, T) {
   P._closed = idx;
   const list = idx.map(i => { const t = T[i]; return `<button class="item" data-i="${i}"><span class="l1">${coin(t.symbol)} ${chip(t.side)} ${t.pattern}</span><span class="l2">出場 ${fmtDT(t.t_exit)} · ${t.reason}</span><span class="r">${rSpan(t.R_net)}</span></button>`; }).join("");
   return `<div class="toolbar"><label>結果 ${seg("res", [["all", "全部"], ["win", "獲利"], ["loss", "虧損"]])}</label>
-      <label>帳戶 ${seg("kind", [["all", "全部"], ["base", "原規則"], ["strong", "強勢"], ["tp4", "強勢四段"]])}</label><span>${idx.length} 筆，最新出場的在最上面</span></div>
+      <label>帳戶 ${seg("kind", [["all", "全部"], ["base", "原規則"], ["base4", "原規則四段"], ["strong", "強勢"], ["tp4", "強勢四段"]])}</label><span>${idx.length} 筆，最新出場的在最上面</span></div>
     ${idx.length ? `<div class="md"><div class="card detail" id="tdetail"><h2 id="tt"></h2><div class="tags" id="ttags"></div><dl class="facts2" id="tf"></dl>
       <div class="seg" id="ccseg" style="margin:0 0 6px"></div>${CHART_LEGEND}<div class="chart" id="cc"></div></div>
     <div class="card list" id="tlist">${list}</div></div>` : '<div class="card"><div class="empty">沒有符合條件的交易。</div></div>'}`;
@@ -543,8 +544,8 @@ function bindClosed(P, T) {
 }
 
 function paperAccounts(P, T) {
-  const cols = [["", "4H"], ["｜強勢", "4H"], ...TFX.map(n => [`｜強勢｜${n}`, n]), ["｜強勢四段", "4H"], ...TFX.map(n => [`｜強勢四段｜${n}`, n])];
-  const edge = new Set([1, 5]);                     // columns that start a new group
+  const cols = [["", "等幅目標"], ["｜四段", "四段停利"], ["｜強勢", "4H"], ...TFX.map(n => [`｜強勢｜${n}`, n]), ["｜強勢四段", "4H"], ...TFX.map(n => [`｜強勢四段｜${n}`, n])];
+  const edge = new Set([2, 6]);                     // columns that start a new group
   const stat = {}, open = {};
   for (const t of T) { const x = stat[t.pattern] ||= { n: 0, r: 0 }; x.n++; x.r += t.R_net; }
   for (const p of P.positions || []) open[p.account] = (open[p.account] || 0) + 1;
@@ -556,10 +557,10 @@ function paperAccounts(P, T) {
   const total = (suffix, j) => { const g = T.filter(t => t.pattern.endsWith(suffix) && t.pattern.split("｜").slice(1).join("｜") === suffix.slice(1)), r = g.reduce((a, t) => a + t.R_net, 0);
     return `<td class="num${edge.has(j) ? " g" : ""}">${g.length ? rSpan(r, 1) + `<small>${g.length} 筆</small>` : "—"}</td>`; };
   const active = Object.values(P.equity).filter(e => e !== DATA.start_equity).length;
-  return `<details class="about"><summary>帳戶怎麼分</summary><p>每個帳戶各自從 ${DATA.start_equity.toLocaleString("en-US")} USDT 開始，每筆風險 ${DATA.risk_pct}%。每種形態在 4 小時線有三個帳戶：原規則（目標是形態等幅）、強勢（只做放量的強勢突破，到 1R 後用移動止損）、強勢四段（同一批強勢進場，1R、2R、3R 各出 25%，第一次停利後止損移到進場價，最後 25% 用移動止損）。後兩種另外在 8 小時、12 小時、日線各有一個。</p></details>
+  return `<details class="about"><summary>帳戶怎麼分</summary><p>每個帳戶各自從 ${DATA.start_equity.toLocaleString("en-US")} USDT 開始，每筆風險 ${DATA.risk_pct}%。每種形態在 4 小時線有四個帳戶：原規則（每個形態突破都做，目標是形態等幅）、原規則四段（同一批進場，改用四段出場）、強勢（只做放量的強勢突破，到 1R 後用移動止損）、強勢四段（同一批強勢進場，1R、2R、3R 各出 25%，第一次停利後止損移到進場價，最後 25% 用移動止損）。後兩種另外在 8 小時、12 小時、日線各有一個。</p></details>
     <div class="card"><h2>各帳戶已結束交易的合計</h2><p class="sub">共 ${Object.keys(P.equity).length} 個帳戶，${active} 個已有交易結束。每格是該帳戶的合計 R 與筆數；「—」是還沒有交易。</p>
       <div class="tablewrap free"><table class="matrix"><thead>
-        <tr><th rowspan="2">形態</th><th class="g">原規則</th><th class="g" colspan="4">強勢（移動止損）</th><th class="g" colspan="4">強勢四段停利</th></tr>
+        <tr><th rowspan="2">形態</th><th class="g" colspan="2">原規則（4H）</th><th class="g" colspan="4">強勢（移動止損）</th><th class="g" colspan="4">強勢四段停利</th></tr>
         <tr>${cols.map(([, n], j) => `<th class="num${j === 0 || edge.has(j) ? " gl" : ""}">${n}</th>`).join("")}</tr></thead>
         <tbody>${pats.map(p => `<tr><td>${p} ${sideOf(p) ? chip(sideOf(p)) : ""}</td>${cols.map(([sfx], j) => cell(p + sfx, j).replace('class="num', j === 0 ? 'class="num g' : 'class="num')).join("")}</tr>`).join("")}</tbody>
         <tfoot><tr><td>合計</td>${cols.map(([sfx], j) => total(sfx, j).replace('class="num', j === 0 ? 'class="num g' : 'class="num')).join("")}</tr></tfoot></table></div></div>`;

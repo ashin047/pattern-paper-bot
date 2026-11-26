@@ -81,10 +81,11 @@ def main():
 
     out += ["## 規則與週期比較（已結束交易）", "",
             "「強勢版」和「強勢四段停利」做的是同一批進場，只有出場不同：前者全部部位用移動止損；"
-            "後者在 1R、2R、3R 各出 25%，第一次停利後止損移到進場價，最後 25% 用移動止損。", "", "| 組別 | 筆數 | 勝率 | 每筆平均 | 合計 |", "|---|---|---|---|---|"]
+            "後者在 1R、2R、3R 各出 25%，第一次停利後止損移到進場價，最後 25% 用移動止損。"
+            "「原規則」和「原規則四段停利」也是同一批進場（每一個形態突破），前者目標是形態等幅，後者用同樣的四段出場。", "", "| 組別 | 筆數 | 勝率 | 每筆平均 | 合計 |", "|---|---|---|---|---|"]
     tf_of = lambda t: t.get("timeframe") or "4H"
-    kind = lambda t: "四段" if "四段" in t["pattern"] else "強勢" if "強勢" in t["pattern"] else "原"
-    groups = [("4H 原規則", lambda t: kind(t) == "原")]
+    kind = lambda t: "四段" if "強勢四段" in t["pattern"] else "原四段" if "四段" in t["pattern"] else "強勢" if "強勢" in t["pattern"] else "原"
+    groups = [("4H 原規則（等幅目標）", lambda t: kind(t) == "原"), ("4H 原規則四段停利", lambda t: kind(t) == "原四段")]
     groups += [(f"{n} 強勢版（移動止損）", lambda t, n=n: kind(t) == "強勢" and tf_of(t) == n) for n in ("4H", "8H", "12H", "日線")]
     groups += [(f"{n} 強勢四段停利", lambda t, n=n: kind(t) == "四段" and tf_of(t) == n) for n in ("4H", "8H", "12H", "日線")]
     groups += [("全部 強勢版（移動止損）", lambda t: kind(t) == "強勢"), ("全部 強勢四段停利", lambda t: kind(t) == "四段")]
