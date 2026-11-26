@@ -5,6 +5,7 @@
 ## 怎麼看結果
 
 - **[STATUS.md](STATUS.md)**：目前持倉、最近的交易、各組比較。每次執行後自動更新，在 GitHub 網站或手機 App 直接看。
+- **[TRADES.md](TRADES.md)**：每一筆已結束交易各一張 K 線圖（用它自己的進場週期，標出進場、止損、目標、出場），依月份分頁。持倉的圖在 STATUS.md 裡。
 - **完整圖表**：Actions 分頁 → 最新一次 `paper-bot` 執行 → Artifacts 裡的 `dashboard`，下載後打開 `dashboard.html`。
 - **在電腦上看**：雙擊 `view_dashboard.bat`，它會同步最新紀錄、重建圖表頁並打開。
 
@@ -21,7 +22,8 @@
 |---|---|
 | `run_pattern.py --once` | 跑一輪：更新行情、偵測形態、記錄進出場 |
 | `cloud_fetch.py` | 確保 K 線與資金費率歷史存在（平常由快取提供） |
-| `status_md.py` | 產生 STATUS.md |
+| `status_md.py` | 產生 STATUS.md、TRADES.md 與 `trades/` 月份頁 |
+| `charts.py` | 畫每筆交易的 K 線圖（`charts/` 裡的 SVG） |
 | `dashboard.py` | 產生完整圖表頁 dashboard.html |
 | `research4.py`、`research7.py` | 形態偵測與出場重播（機器人使用的規則） |
 | `logs/pattern_*.json`、`logs/pattern_trades.csv`、`logs/pattern_events.jsonl` | 模擬交易紀錄 |

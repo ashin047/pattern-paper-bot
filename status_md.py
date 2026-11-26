@@ -10,6 +10,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import charts
+
 ROOT = Path(__file__).resolve().parent
 LOGS = ROOT / "logs"
 TPE = timezone(timedelta(hours=8))
@@ -39,6 +41,9 @@ def main():
     T = list(csv.DictReader(tp.open(encoding="utf-8"))) if tp.exists() else []
     for t in T:
         t["R"] = float(t["R_net"])
+    _, _, CP, CT = charts.load()                    # the same records, with a chart drawn for every position and trade
+    charts.build(CP, CT)
+    charts.write_trade_pages(CT)
     start = cfg["start_equity"]
     eq = state["equity"]
     out = ["# 形態模擬交易狀態", "",
@@ -68,6 +73,10 @@ def main():
     else:
         out.append("目前沒有持倉。")
     out.append("")
+    if CP:
+        out += ["## 持倉圖表", "", "每筆持倉一張圖，用它自己的進場週期畫。黑色三角是進場的 K 棒，藍色底是持倉期間。", ""]
+        for p in CP:
+            out += charts.position_md(p)
 
     out += ["## 規則與週期比較（已結束交易）", "", "| 組別 | 筆數 | 勝率 | 每筆平均 | 合計 |", "|---|---|---|---|---|"]
     groups = [("4H 原規則", lambda t: "強勢" not in t["pattern"]),
@@ -88,6 +97,10 @@ def main():
     else:
         out.append("還沒有已結束的交易。")
     out.append("")
+    if CT:
+        out += ["## 最近 10 筆已結束交易的圖表", "", "黑色三角是進場，藍色三角是出場。**每一筆已結束交易的圖表都在 [TRADES.md](TRADES.md)**，依月份分頁。", ""]
+        for t in sorted(CT, key=lambda t: t["t_exit"], reverse=True)[:10]:
+            out += charts.trade_md(t)
 
     moved = sorted(((v - start, k) for k, v in eq.items() if v != start), reverse=True)
     out += ["## 各帳戶損益（只列有交易的）", ""]
