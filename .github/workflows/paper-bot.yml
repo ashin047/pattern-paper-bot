@@ -71,6 +71,7 @@ jobs:
           git add -A charts trades 2>/dev/null || true
           git add logs/pattern_trades.csv logs/pattern_events.jsonl 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Update paper-trading records"
+          git pull --rebase -q origin main    # tolerate a push that landed while this run was working
           git push
 
       # the full interactive chart page becomes the public website: it is pushed as the only
