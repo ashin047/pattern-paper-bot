@@ -1,0 +1,17 @@
+{
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"],
+  "start_equity": 10000,
+  "risk_pct": 0.5,
+  "fee_rate": 0.0005,
+  "slippage": 0.0001,
+  "max_leverage": 3,
+  "warmup_days": 300,
+  "notify_webhook": "",
+  "strategy": {
+    "sessions": ["ASIA", "LONDON", "NYSE"],
+    "trade_weekends": true,
+    "max_trades_per_session": 2,
+    "stop_mode": "range",
+    "min_stop_pct": 0.5
+  }
+}

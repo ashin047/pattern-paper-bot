@@ -1,0 +1,9 @@
+# market data is downloaded / cached, never committed
+data_oos/
+data_funding/
+data_research/
+data_oos3/
+__pycache__/
+*.pyc
+# the full chart page is rebuilt on demand (see view_dashboard.bat) and uploaded as a workflow artifact
+dashboard.html

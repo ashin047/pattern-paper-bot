@@ -1,0 +1,72 @@
+name: paper-bot
+
+# Runs the paper-trading bot (simulated money only, no exchange account, no API key)
+# a few minutes after every 4-hour candle close, then commits the updated records.
+on:
+  schedule:
+    - cron: "7 0,4,8,12,16,20 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paper-bot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # price and funding history live in a cache, not in the repository
+      - name: Restore market data
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data_oos
+            data_funding
+          key: market-data-${{ github.run_id }}
+          restore-keys: market-data-
+
+      - name: Make sure history exists
+        run: python cloud_fetch.py
+
+      - name: Run one cycle
+        run: python run_pattern.py --once
+
+      - name: Write status page
+        run: python status_md.py
+
+      - name: Save market data
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data_oos
+            data_funding
+          key: market-data-${{ github.run_id }}
+
+      - name: Upload dashboard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard
+          path: dashboard.html
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Commit records
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add logs/pattern_state.json logs/pattern_positions.json STATUS.md
+          git add logs/pattern_trades.csv logs/pattern_events.jsonl 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "Update paper-trading records"
+          git push
