@@ -34,7 +34,8 @@ h2 { font-size: 15px; margin: 0 0 2px; }
   background: var(--surface); color: var(--text2); cursor: pointer; }
 .tabs button[aria-selected=true], .seg button[aria-pressed=true] { background: var(--text); color: var(--surface); border-color: var(--text); }
 .filters { display: flex; gap: 10px 16px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
-.filters label { color: var(--text2); font-size: 13px; display: flex; gap: 6px; align-items: center; }
+.filters label { color: var(--text2); font-size: 13px; display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+.filters label .seg { white-space: normal; }
 .seg { display: flex; gap: 4px; }
 .seg button { padding: 4px 12px; }
 select { font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
@@ -75,15 +76,76 @@ td.num, th.num { text-align: right; }
 .events div { padding: 5px 2px; border-bottom: 1px solid var(--grid); }
 .events time { color: var(--muted); margin-right: 8px; }
 .note { color: var(--text2); font-size: 12.5px; margin: 8px 0 0; }
+
+/* ---------- layout added with the redesign ---------- */
+main { max-width: 1180px; padding-top: 18px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px 14px; flex-wrap: wrap; }
+.top .sub { margin: 0; }
+.badge { font-size: 12px; color: var(--text2); border: 1px solid var(--border); background: var(--surface);
+  border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
+.badge i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--good); margin-right: 6px; }
+.tabs { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 10px 0; margin: 10px 0 12px;
+  border-bottom: 1px solid var(--border); }
+.tabs button { font-weight: 600; }
+.subnav { margin: 0 0 14px; flex-wrap: wrap; }
+.seg { flex-wrap: wrap; }
+button:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--long); outline-offset: 2px; }
+.kpis { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
+.kpi { display: flex; flex-direction: column; gap: 1px; }
+.kpi span { order: -1; }
+.kpi b { font-size: 22px; line-height: 1.25; }
+.kpi small { color: var(--muted); font-size: 11.5px; }
+.card.filters { padding: 12px 14px; }
+.card h2 + .sub { margin-top: 2px; }
+details.about { margin: 0 0 12px; font-size: 13px; color: var(--text2); }
+details.about summary { cursor: pointer; display: inline-block; padding: 2px 0; color: var(--text2); }
+details.about p { margin: 6px 0 0; max-width: 78ch; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 400; color: var(--text2);
+  border: 1px solid var(--border); border-radius: 999px; padding: 0 8px; line-height: 19px; vertical-align: 1px; }
+.chip i { width: 7px; height: 7px; border-radius: 50%; }
+.md { display: grid; grid-template-columns: minmax(280px, 370px) minmax(0, 1fr); gap: 14px; align-items: start; }
+.md .list { order: -1; padding: 6px; max-height: 660px; overflow: auto; }
+.md .detail { margin-bottom: 0; scroll-margin-top: 64px; }
+@media (max-width: 860px) { .md { grid-template-columns: minmax(0, 1fr); } .md .list { max-height: none; } }
+.grp { display: flex; gap: 10px; align-items: baseline; padding: 10px 10px 4px; font-size: 12px; color: var(--text2);
+  border-top: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+.grp:first-child { border-top: 0; }
+.grp b { font-size: 14px; color: var(--text); }
+.grp .r { margin-left: auto; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 10px; width: 100%; text-align: left; font: inherit;
+  color: inherit; background: none; border: 0; border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.item:hover { background: var(--grid); }
+.item[aria-current=true] { background: var(--sel); }
+.item .l1 { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .l2 { grid-column: 1; color: var(--text2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .r { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.facts2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px 14px; margin: 10px 0 12px; }
+.facts2 dt { font-size: 11.5px; color: var(--muted); }
+.facts2 dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.facts2 dd small { display: block; font-weight: 400; color: var(--text2); font-size: 11.5px; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 0; }
+td small { display: block; color: var(--muted); font-size: 11px; }
+td.dim { color: var(--muted); }
+.tablewrap.free { max-height: none; }
+.matrix th.g { text-align: center; border-left: 1px solid var(--border); }
+.matrix td.g, .matrix th.gl { border-left: 1px solid var(--border); }
+.matrix td:first-child, .matrix th:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; }
+.matrix tfoot td { font-weight: 600; border-top: 1px solid var(--border); border-bottom: 0; }
+.toolbar { display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; color: var(--text2); font-size: 13px; }
+.toolbar label { display: flex; gap: 6px; align-items: center; }
+@media (max-width: 520px) { main { padding: 14px 12px 40px; } h1 { font-size: 19px; } .card { padding: 13px; } .kpi b { font-size: 19px; } }
+@media (prefers-color-scheme: dark) { :root { --good: #35b85c; --bad: #ef6a6a; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>形態交易統計</h1>
-  <p class="sub" id="meta"></p>
+  <header class="top">
+    <div><h1>形態交易統計</h1><p class="sub" id="meta"></p></div>
+    <span class="badge"><i></i>模擬資金 · 沒有真實下單</span>
+  </header>
   <div class="tabs" role="tablist">
-    <button role="tab" data-k="history">2018 至今回測</button>
     <button role="tab" data-k="paper">模擬交易（實測中）</button>
+    <button role="tab" data-k="history">2018 至今回測</button>
   </div>
   <div id="view"></div>
 </main>
@@ -156,6 +218,7 @@ function cumChart(host, series) {
     el("line", { x1: x(tx), x2: x(tx), y1: h - m.b, y2: h - m.b + 4, stroke: "var(--muted)" }, svg);
     txt(svg, x(tx), h - 6, yr, { "text-anchor": "middle" });
   }
+  if (yearOf(t0) === yearOf(t1)) { txt(svg, m.l, h - 6, fmtD(t0)); txt(svg, w - m.r, h - 6, fmtD(t1), { "text-anchor": "end" }); }
   const ends = [];
   for (const s of series) {
     let d = "";
@@ -267,7 +330,7 @@ function candleChart(host, t, tfn) {
     el("line", { x1: xi(iE) - slot / 2, x2: w - m.r, y1: y(l.v), y2: y(l.v), stroke: l.c, "stroke-width": 1.5, "stroke-dasharray": l.d }, svg);
     txt(svg, w - m.r + 6, l.ly + 4, `${l.s} ${fmtP(l.v)}`, { class: "lbl" });
   }
-  const step = Math.ceil(cs.length / 6), lab = c => ms >= 86400000 ? fmtD(c[0]).slice(5) : fmtDT(c[0]);
+  const step = Math.ceil(cs.length / Math.max(2, Math.floor((w - m.l - m.r) / 92))), lab = c => ms >= 86400000 ? fmtD(c[0]).slice(5) : fmtDT(c[0]);
   cs.forEach((c, i) => { if (i % step === 0) txt(svg, xi(i), h - 6, lab(c), { "text-anchor": "middle" }); });
   const cross = el("line", { y1: m.t, y2: h - m.b, stroke: "var(--muted)", visibility: "hidden" }, svg);
   const hit = el("rect", { x: m.l, y: m.t, width: w - m.l - m.r, height: h - m.t - m.b, fill: "transparent" }, svg);
@@ -319,7 +382,7 @@ function renderHistory() {
   const seg = (k, opts) => `<span class="seg">${opts.map(([v, l]) => `<button data-f="${k}" data-v="${v}" aria-pressed="${String(F[k]) === String(v)}">${l}</button>`).join("")}</span>`;
   const sel = (k, list, all) => `<select data-f="${k}"><option value="-1">${all}</option>${list.map((l, i) => `<option value="${i}" ${F[k] === i ? "selected" : ""}>${l}</option>`).join("")}</select>`;
   view.innerHTML = `
-    <div class="filters">
+    <div class="card filters"><div class="filters" style="margin:0">
       <label>規則 ${seg("rule", [["base", "原規則"], ["strong", "強勢版"]])}</label>
       ${F.rule === "strong" && TF_NAMES.length > 1 ? `<label>週期 ${seg("tf", [...TF_NAMES.map(n => [n, n]), ["all", "全部週期"]])}</label>` : ""}
       <label>商品組 ${seg("grp", [["all", `全部 ${N_ALL}`], ...GROUP_NAMES.map((n, g) => [g, `${n} ${GROUP_N[g]}`]).filter((_, g) => GROUP_N[g])])}</label>
@@ -327,8 +390,8 @@ function renderHistory() {
       <label>形態 ${sel("pat", HS.patterns, "全部 16 種")}</label>
       <label>商品 ${sel("sym", HS.symbols.map(s => s.replace("USDT", "")), "全部")}</label>
       <label>成交量 ${seg("vol", [[0, "不限"], [1, "突破有放量"]])}</label>
-    </div>
-    <p class="sub">${F.rule === "strong" ? `強勢版：只做突破 K 棒成交量 ≥ 均量 1.77 倍且實體 ≥ 1.21 倍 ATR 的訊號；沒有固定目標，獲利到 1R 後止損跟在最佳價格後方 3 倍 ATR。門檻是從原本 ${N_ORIG} 個商品的 4 小時線挑出來的，那一組的數字偏樂觀；其他商品組和其他週期沒有參與挑選，比較接近實情。各週期看的是同一段價格，彼此高度相關。` : "原規則（4 小時線）：形態突破就進場，目標是形態等幅，止損在形態另一側的波段點。"}</p>
+    </div></div>
+    <details class="about"><summary>這組規則是什麼</summary><p>${F.rule === "strong" ? `強勢版：只做突破 K 棒成交量 ≥ 均量 1.77 倍且實體 ≥ 1.21 倍 ATR 的訊號；沒有固定目標，獲利到 1R 後止損跟在最佳價格後方 3 倍 ATR。門檻是從原本 ${N_ORIG} 個商品的 4 小時線挑出來的，那一組的數字偏樂觀；其他商品組和其他週期沒有參與挑選，比較接近實情。各週期看的是同一段價格，彼此高度相關。` : "原規則（4 小時線）：形態突破就進場，目標是形態等幅，止損在形態另一側的波段點。"}</p></details>
     <div class="kpis">
       <div class="kpi"><b>${A.n.toLocaleString("en-US")}</b><span>交易筆數</span></div>
       <div class="kpi"><b>${A.win.toFixed(1)}%</b><span>勝率</span></div>
@@ -372,107 +435,159 @@ function renderHistory() {
 }
 
 /* ================= paper tab ================= */
-function holdingsHtml(P) {
-  if (!P.positions_updated) return "";
-  const pos = P.positions, when = `資料更新於 ${fmtDT(P.positions_updated)}（台北時間），機器人每 4 小時更新一次。`;
-  if (!pos.length) return `<div class="card"><h2>持倉中</h2><p class="sub">${when}</p><div class="empty">目前沒有持倉。</div></div>`;
+const PV = { sec: "overview", pos: 0, trade: null, res: "all", kind: "all" };
+const TFX = ["8H", "12H", "日線"];
+const coin = x => x.replace("USDT", "");
+const chip = side => `<span class="chip"><i style="background:var(--${side === "LONG" ? "long" : "short"})"></i>${SIDE[side]}</span>`;
+const kindOf = n => n.includes("四段") ? "tp4" : n.includes("強勢") ? "strong" : "base";
+const acctName = o => { const a = o.account || o.pattern, tf = o.timeframe || "4H"; return tf !== "4H" && !a.includes(tf) ? a + "｜" + tf : a; };
+const span = (a, b) => { const h = Math.max(0, (b - a) / 3600e3); return h >= 48 ? (h / 24).toFixed(1) + " 天" : h.toFixed(0) + " 小時"; };
+const rSpan = (v, d = 2) => `<span class="${cls(v)}">${fmtR(v, d)}</span>`;
+const fact = (k, v) => `<div><dt>${k}</dt><dd>${v}</dd></div>`;
+const narrow = () => matchMedia("(max-width: 860px)").matches;
+const groupTable = rows => `<div class="tablewrap free"><table><thead><tr><th>組別</th><th class="num">已結束</th><th class="num">勝率</th><th class="num">每筆平均</th><th class="num">合計</th></tr></thead><tbody>${
+  rows.map(([name, g]) => { const n = g.length, r = g.reduce((a, t) => a + t.R_net, 0);
+    return `<tr><td>${name}</td><td class="num">${n}</td><td class="num">${n ? (g.filter(t => t.R_net > 0.05).length / n * 100).toFixed(1) + "%" : "—"}</td><td class="num">${n ? rSpan(r / n) : "—"}</td><td class="num">${n ? rSpan(r, 1) : "—"}</td></tr>`; }).join("")
+  }</tbody></table></div>`;
+const extraFacts = o => (o.breadth != null && o.breadth !== "" ? fact("同方向強勢訊號", `${o.breadth} 個商品`) : "")
+  + (o.crowding != null ? fact("資金費率擁擠度", `${sgn(o.crowding, 3)}%`) : "")
+  + (o.crowding != null && o.funding_R != null ? fact("資金費率累計", `${fmtR(-o.funding_R)}<small>正數是收到</small>`) : "")
+  + fact("這個組合的回測", o.bt ? `${o.bt[0]} 筆<small>2018 至今合計 ${fmtR(o.bt[1], 1)}</small>` : "沒有交易");
+
+function paperOverview(P, T) {
+  const pos = P.positions || [], n = T.length, totR = T.reduce((a, t) => a + t.R_net, 0), wins = T.filter(t => t.R_net > 0.05).length;
+  const openR = pos.reduce((a, p) => a + p.R, 0), eq = Object.values(P.equity), pnl = eq.reduce((a, e) => a + e - DATA.start_equity, 0);
+  const of = k => T.filter(t => kindOf(t.pattern) === k);
+  const events = P.events.length ? P.events.map(e => `<div><time>${fmtDT(e.t)}</time><b>${coin(e.symbol)}</b> ${e.text}</div>`).join("") : '<div class="empty">還沒有進出場紀錄。</div>';
+  return `
+    <div class="kpis">
+      <div class="kpi"><span>已結束交易</span><b>${n}</b><small>${n ? `獲利 ${wins} 筆` : "尚無"}</small></div>
+      <div class="kpi"><span>勝率</span><b>${n ? (wins / n * 100).toFixed(1) + "%" : "—"}</b><small>結果高於 +0.05R 算獲利</small></div>
+      <div class="kpi"><span>每筆平均</span><b class="${n ? cls(totR) : ""}">${n ? fmtR(totR / n) : "—"}</b><small>已扣成本與資金費率</small></div>
+      <div class="kpi"><span>已結束合計</span><b class="${n ? cls(totR) : ""}">${n ? fmtR(totR, 1) : "—"}</b><small>全部帳戶 ${fmtM(pnl)} USDT</small></div>
+      <div class="kpi"><span>持倉中</span><b>${pos.length}</b><small>${new Set(pos.map(p => p.symbol)).size} 個商品</small></div>
+      <div class="kpi"><span>持倉浮動損益</span><b class="${pos.length ? cls(openR) : ""}">${pos.length ? fmtR(openR, 1) : "—"}</b><small>以最近收盤價計算</small></div>
+    </div>
+    ${n ? `<div class="card"><h2>已結束交易的累計結果</h2><p class="sub">依出場時間把每筆結果加總，單位 R，已扣成本與資金費率。</p><div class="chart" id="pcum"></div></div>` : ""}
+    <div class="half">
+      <div class="card"><h2>三種帳戶比較</h2>
+        <p class="sub">強勢版和強勢四段做的是同一批進場，只有出場不同。持倉中的不算在內。</p>
+        ${groupTable([["原規則：目標是形態等幅", of("base")], ["強勢版：全部部位用移動止損", of("strong")], ["強勢四段：1R、2R、3R 各出 25%，餘倉移動止損", of("tp4")]])}
+        <p class="note">回測裡四段停利的勝率高 4 到 5 個百分點、結果較平穩，每筆平均差不多。至少各累積一百筆再比較。</p></div>
+      ${P.neg_frozen ? `<div class="card"><h2>事先標記的條件</h2>
+        <p class="sub">回測時發現可能比較差的三種情況，門檻在看到實測結果前就固定。只分組比較，沒有刪掉任何交易。</p>
+        ${groupTable([["回測為負的組合", T.filter(t => t.neg_combo)], ["其餘組合", T.filter(t => !t.neg_combo)],
+          ["資金費率明顯擁擠（≥ 0.02%）", T.filter(t => t.crowding != null && t.crowding >= 0.02)], ["資金費率不擁擠", T.filter(t => t.crowding != null && t.crowding < 0.02)],
+          ["強勢版，孤單訊號", T.filter(t => kindOf(t.pattern) === "strong" && t.breadth === 1)], ["強勢版，有其他商品同步", T.filter(t => kindOf(t.pattern) === "strong" && t.breadth >= 2)]])}
+        <details class="about" style="margin:8px 0 0"><summary>這些條件怎麼定義</summary><p>回測為負的組合：${P.neg_frozen} 固定的 ${P.neg_count} 個（規則 × 週期 × 商品 × 形態）。擁擠：進場前資金費率顯示自己這一邊要多付 0.02% 以上。孤單訊號：強勢版進場時沒有其他商品同方向出現強勢訊號。</p></details></div>` : ""}
+    </div>
+    <div class="card"><h2>最近的進出場</h2><p class="sub">最新的在最上面。</p><div class="events">${events}</div></div>`;
+}
+
+function paperPositions(P) {
+  const pos = P.positions || [];
+  if (!P.positions_updated || !pos.length) return `<div class="card"><div class="empty">${P.positions_updated ? "目前沒有持倉。" : "機器人還沒有回報持倉。"}</div></div>`;
   const by = {};
   for (const p of pos) (by[p.symbol] ||= []).push(p);
-  const coins = Object.entries(by).map(([sym, ps]) => {
-    const L = ps.filter(p => p.side === "LONG").length, S = ps.length - L, r = ps.reduce((a, p) => a + p.R, 0);
-    return { sym, ps, L, S, r, last: ps[0].last };
-  }).sort((a, b) => b.r - a.r);
-  const tot = pos.reduce((a, p) => a + p.R, 0);
-  const dir = c => [c.L ? `做多 ${c.L} 筆` : "", c.S ? `做空 ${c.S} 筆` : ""].filter(Boolean).join("、");
-  const pct = (a, b) => ((a / b - 1) * 100).toFixed(1) + "%";
-  const hrs = t => { const h = Math.max(0, (P.positions_updated - t) / 3600e3); return h >= 48 ? (h / 24).toFixed(1) + " 天" : h.toFixed(0) + " 小時"; };
-  return `<div class="card"><h2>持倉中：${coins.length} 個商品、${pos.length} 筆</h2>
-    <p class="sub">${when}浮動損益以最近一根已收盤 K 棒的收盤價計算，未扣出場成本；合計 <b class="${cls(tot)}">${fmtR(tot, 1)}</b>。</p>
-    <div class="tablewrap"><table><thead><tr><th>商品</th><th>方向</th><th class="num">現價</th><th class="num">浮動損益合計</th></tr></thead><tbody>${
-      coins.map(c => `<tr><td><b>${c.sym.replace("USDT", "")}</b></td><td>${dir(c)}</td><td class="num">${fmtP(c.last)}</td><td class="num"><span class="${cls(c.r)}">${fmtR(c.r)}</span></td></tr>`).join("")
-    }</tbody></table></div>
-    <h2 style="margin-top:14px">逐筆持倉</h2><p class="sub">點一列看那筆持倉的 K 線圖。</p>
-    <div class="tablewrap"><table><thead><tr><th>商品</th><th>帳戶</th><th>方向</th><th>進場時間</th><th>已持有</th><th class="num">進場價</th><th class="num">現價</th><th class="num">目前止損</th><th class="num">目標</th><th class="num">浮動損益</th></tr></thead><tbody id="ptb">${
-      (P._flat = coins.flatMap(c => c.ps)).map((p, i) => `<tr class="pick" data-i="${i}"><td>${p.symbol.replace("USDT", "")}</td><td>${p.account}${p.timeframe !== "4H" && !p.account.includes(p.timeframe) ? "｜" + p.timeframe : ""}</td><td>${SIDE[p.side]}</td><td>${fmtDT(p.t_entry)}</td><td>${hrs(p.t_entry)}</td><td class="num">${fmtP(p.entry)}</td><td class="num">${fmtP(p.last)}（${pct(p.last, p.entry)}）</td><td class="num">${fmtP(p.stop)}${p.stop !== p.stop0 ? "（已移動）" : ""}</td><td class="num">${tgtText(p)}</td><td class="num"><span class="${cls(p.R)}">${fmtR(p.R)}</span></td></tr>`).join("")
-    }</tbody></table></div>
-    <h2 id="pt" style="margin-top:14px"></h2><div class="facts" id="pf"></div>
-    <div class="seg" id="pcseg" style="margin:6px 0"></div>${CHART_LEGEND}<div class="chart" id="pc"></div></div>`;
+  const coins = Object.entries(by).map(([sym, ps]) => ({ sym, ps, r: ps.reduce((a, p) => a + p.R, 0) })).sort((a, b) => b.r - a.r);
+  P._flat = coins.flatMap(c => c.ps);
+  let i = 0;
+  const list = coins.map(c => `<div class="grp"><b>${coin(c.sym)}</b><span>現價 ${fmtP(c.ps[0].last)}</span><span class="r">${c.ps.length > 1 ? "合計 " : ""}${rSpan(c.r)}</span></div>`
+    + c.ps.map(p => `<button class="item" data-i="${i++}"><span class="l1">${chip(p.side)} ${acctName(p)}</span><span class="l2">進場 ${fmtDT(p.t_entry)} · 已持有 ${span(p.t_entry, P.positions_updated)}${is4(p) ? ` · 已停利 ${p.tp_hit ?? 0} 段` : ""}${p.stop !== p.stop0 ? " · 止損已移動" : ""}</span><span class="r">${rSpan(p.R)}</span></button>`).join("")).join("");
+  return `<p class="sub">資料更新於 ${fmtDT(P.positions_updated)}（台北時間），每 4 小時更新一次。浮動損益以最近一根已收盤 K 棒的收盤價計算，未扣出場成本。點一筆看它的 K 線圖。</p>
+    <div class="md"><div class="card detail" id="pdetail"><h2 id="pt"></h2><div class="tags" id="ptags"></div><dl class="facts2" id="pf"></dl>
+      <div class="seg" id="pcseg" style="margin:0 0 6px"></div>${CHART_LEGEND}<div class="chart" id="pc"></div></div>
+    <div class="card list" id="plist">${list}</div></div>`;
+}
+function bindPositions(P) {
+  if (!$("#plist")) return;
+  const pick = (i, jump) => { const p = P._flat[PV.pos = Math.min(i, P._flat.length - 1)];
+    $("#pt").textContent = `${coin(p.symbol)} · ${acctName(p)}`;
+    $("#ptags").innerHTML = `${chip(p.side)}<span class="chip">持倉中</span><span class="chip">${p.timeframe} 週期</span>${p.neg_combo ? '<span class="chip">回測為負的組合</span>' : ""}`;
+    $("#pf").innerHTML = fact("浮動損益", rSpan(p.R)) + fact("進場", `${fmtP(p.entry)}<small>${fmtDT(p.t_entry)}</small>`)
+      + fact("現價", `${fmtP(p.last)}<small>${sgn((p.last / p.entry - 1) * 100)}%</small>`)
+      + fact("目前止損", `${fmtP(p.stop)}${p.stop !== p.stop0 ? `<small>原本 ${fmtP(p.stop0)}</small>` : ""}`) + fact("目標", tgtText(p)) + extraFacts(p);
+    showChart($("#pcseg"), $("#pc"), { ...p, t_exit: null, exit: null });
+    document.querySelectorAll("#plist .item").forEach(b => b.setAttribute("aria-current", +b.dataset.i === PV.pos));
+    if (jump && narrow()) $("#pdetail").scrollIntoView({ behavior: "smooth", block: "start" }); };
+  $("#plist").addEventListener("click", e => { const b = e.target.closest(".item"); if (b) pick(+b.dataset.i, true); });
+  pick(PV.pos);
+}
+
+function paperClosed(P, T) {
+  if (!T.length) return '<div class="card"><div class="empty">還沒有已結束的交易。機器人每 4 小時檢查一次，有交易結束就會出現在這裡。</div></div>';
+  const seg = (k, opts) => `<span class="seg">${opts.map(([v, l]) => `<button data-pf="${k}" data-v="${v}" aria-pressed="${PV[k] === v}">${l}</button>`).join("")}</span>`;
+  const idx = T.map((_, i) => i).filter(i => (PV.res === "all" || (PV.res === "win") === (T[i].R_net > 0.05)) && (PV.kind === "all" || kindOf(T[i].pattern) === PV.kind))
+    .sort((a, b) => T[b].t_exit - T[a].t_exit);
+  P._closed = idx;
+  const list = idx.map(i => { const t = T[i]; return `<button class="item" data-i="${i}"><span class="l1">${coin(t.symbol)} ${chip(t.side)} ${t.pattern}</span><span class="l2">出場 ${fmtDT(t.t_exit)} · ${t.reason}</span><span class="r">${rSpan(t.R_net)}</span></button>`; }).join("");
+  return `<div class="toolbar"><label>結果 ${seg("res", [["all", "全部"], ["win", "獲利"], ["loss", "虧損"]])}</label>
+      <label>帳戶 ${seg("kind", [["all", "全部"], ["base", "原規則"], ["strong", "強勢"], ["tp4", "強勢四段"]])}</label><span>${idx.length} 筆，最新出場的在最上面</span></div>
+    ${idx.length ? `<div class="md"><div class="card detail" id="tdetail"><h2 id="tt"></h2><div class="tags" id="ttags"></div><dl class="facts2" id="tf"></dl>
+      <div class="seg" id="ccseg" style="margin:0 0 6px"></div>${CHART_LEGEND}<div class="chart" id="cc"></div></div>
+    <div class="card list" id="tlist">${list}</div></div>` : '<div class="card"><div class="empty">沒有符合條件的交易。</div></div>'}`;
+}
+function bindClosed(P, T) {
+  document.querySelectorAll("button[data-pf]").forEach(b => b.addEventListener("click", () => { PV[b.dataset.pf] = b.dataset.v; renderPaper(); }));
+  if (!$("#tlist")) return;
+  const pick = (i, jump) => { const t = T[PV.trade = i];
+    $("#tt").textContent = `${coin(t.symbol)} · ${t.pattern}`;
+    $("#ttags").innerHTML = `${chip(t.side)}<span class="chip">${t.reason}</span><span class="chip">${t.timeframe} 週期</span><span class="chip">${+t.volume_confirmed ? "突破有放量" : "突破未放量"}</span>${t.neg_combo ? '<span class="chip">回測為負的組合</span>' : ""}`;
+    $("#tf").innerHTML = fact("結果", `${rSpan(t.R_net)}<small>${fmtM(t.pnl)} USDT</small>`) + fact("進場", `${fmtP(t.entry)}<small>${fmtDT(t.t_entry)}</small>`)
+      + fact("出場", `${fmtP(t.exit)}<small>${fmtDT(t.t_exit)}</small>`) + fact("持有", span(t.t_entry, t.t_exit)) + fact("止損", fmtP(t.stop)) + fact("目標", tgtText(t)) + extraFacts(t);
+    showChart($("#ccseg"), $("#cc"), t);
+    document.querySelectorAll("#tlist .item").forEach(b => b.setAttribute("aria-current", +b.dataset.i === i));
+    if (jump && narrow()) $("#tdetail").scrollIntoView({ behavior: "smooth", block: "start" }); };
+  $("#tlist").addEventListener("click", e => { const b = e.target.closest(".item"); if (b) pick(+b.dataset.i, true); });
+  pick(P._closed.includes(PV.trade) ? PV.trade : P._closed[0]);
+}
+
+function paperAccounts(P, T) {
+  const cols = [["", "4H"], ["｜強勢", "4H"], ...TFX.map(n => [`｜強勢｜${n}`, n]), ["｜強勢四段", "4H"], ...TFX.map(n => [`｜強勢四段｜${n}`, n])];
+  const edge = new Set([1, 5]);                     // columns that start a new group
+  const stat = {}, open = {};
+  for (const t of T) { const x = stat[t.pattern] ||= { n: 0, r: 0 }; x.n++; x.r += t.R_net; }
+  for (const p of P.positions || []) open[p.account] = (open[p.account] || 0) + 1;
+  const pats = Object.keys(P.equity).filter(k => !k.includes("｜"));
+  const sideOf = p => { const i = HS.patterns.indexOf(p); return i < 0 ? null : HS.sides[i] > 0 ? "LONG" : "SHORT"; };
+  const cell = (label, j) => { const x = stat[label], o = open[label], e = P.equity[label], g = edge.has(j) ? " g" : "";
+    if (!x && !o) return `<td class="num dim${g}">—</td>`;
+    return `<td class="num${g}" title="${label}：權益 ${e == null ? "—" : e.toLocaleString("en-US", { maximumFractionDigits: 0 })} USDT">${x ? rSpan(x.r, 1) : "—"}<small>${[x ? `${x.n} 筆` : "", o ? `持倉 ${o}` : ""].filter(Boolean).join(" · ")}</small></td>`; };
+  const total = (suffix, j) => { const g = T.filter(t => t.pattern.endsWith(suffix) && t.pattern.split("｜").slice(1).join("｜") === suffix.slice(1)), r = g.reduce((a, t) => a + t.R_net, 0);
+    return `<td class="num${edge.has(j) ? " g" : ""}">${g.length ? rSpan(r, 1) + `<small>${g.length} 筆</small>` : "—"}</td>`; };
+  const active = Object.values(P.equity).filter(e => e !== DATA.start_equity).length;
+  return `<details class="about"><summary>帳戶怎麼分</summary><p>每個帳戶各自從 ${DATA.start_equity.toLocaleString("en-US")} USDT 開始，每筆風險 ${DATA.risk_pct}%。每種形態在 4 小時線有三個帳戶：原規則（目標是形態等幅）、強勢（只做放量的強勢突破，到 1R 後用移動止損）、強勢四段（同一批強勢進場，1R、2R、3R 各出 25%，第一次停利後止損移到進場價，最後 25% 用移動止損）。後兩種另外在 8 小時、12 小時、日線各有一個。</p></details>
+    <div class="card"><h2>各帳戶已結束交易的合計</h2><p class="sub">共 ${Object.keys(P.equity).length} 個帳戶，${active} 個已有交易結束。每格是該帳戶的合計 R 與筆數；「—」是還沒有交易。</p>
+      <div class="tablewrap free"><table class="matrix"><thead>
+        <tr><th rowspan="2">形態</th><th class="g">原規則</th><th class="g" colspan="4">強勢（移動止損）</th><th class="g" colspan="4">強勢四段停利</th></tr>
+        <tr>${cols.map(([, n], j) => `<th class="num${j === 0 || edge.has(j) ? " gl" : ""}">${n}</th>`).join("")}</tr></thead>
+        <tbody>${pats.map(p => `<tr><td>${p} ${sideOf(p) ? chip(sideOf(p)) : ""}</td>${cols.map(([sfx], j) => cell(p + sfx, j).replace('class="num', j === 0 ? 'class="num g' : 'class="num')).join("")}</tr>`).join("")}</tbody>
+        <tfoot><tr><td>合計</td>${cols.map(([sfx], j) => total(sfx, j).replace('class="num', j === 0 ? 'class="num g' : 'class="num')).join("")}</tr></tfoot></table></div></div>`;
 }
 
 function renderPaper() {
-  const P = DATA.paper, T = P.trades, view = $("#view");
-  const sideOf = p => { const i = HS.patterns.indexOf(p.split("｜")[0]); return i < 0 ? 0 : HS.sides[i]; };
-  const names = Object.keys(P.equity);
-  const stat = {}; for (const t of T) { const s = stat[t.pattern] ||= { n: 0, r: 0 }; s.n++; s.r += t.R_net; }
-  const totR = T.reduce((a, t) => a + t.R_net, 0), wins = T.filter(t => t.R_net > 0.05).length;
-  const accRows = names.map(p => { const s = stat[p] || { n: 0, r: 0 }, e = P.equity[p], sd = sideOf(p);
-    return `<tr><td>${p}</td><td>${sd > 0 ? "做多" : sd < 0 ? "做空" : ""}</td><td class="num">${s.n}</td><td class="num">${s.n ? `<span class="${cls(s.r)}">${fmtR(s.r)}</span>` : "—"}</td><td class="num">${e.toLocaleString("en-US", { maximumFractionDigits: 0 })}</td></tr>`; }).join("");
-  const events = P.events.length ? P.events.map(e => `<div><time>${fmtDT(e.t)}</time><b>${e.symbol.replace("USDT", "")}</b> ${e.text}</div>`).join("") : '<div class="empty">還沒有進出場紀錄。</div>';
-  view.innerHTML = `
-    <p class="sub">${P.started_at ? `從 ${fmtDT(P.started_at)}（台北時間）開始實測。` : "模擬交易尚未啟動。"}每個帳戶各自從 ${DATA.start_equity.toLocaleString("en-US")} USDT 開始：4 小時線每種形態有原規則、「｜強勢」、「｜強勢四段」三個帳戶（強勢＝只做放量的強勢突破，到 1R 後改用移動止損）；「｜強勢四段」做的是和強勢版同一批進場，但分四段出場：1R、2R、3R 各出 25%，第一次停利後止損移到進場價，最後 25% 用移動止損。這兩種強勢帳戶另外在 8 小時、12 小時、日線各有一個。每筆風險 ${DATA.risk_pct}%，沒有真實下單。</p>
-    <div class="kpis">
-      <div class="kpi"><b>${T.length}</b><span>已結束交易</span></div>
-      <div class="kpi"><b>${P.positions_updated ? P.positions.length : P.open.length}</b><span>持倉中</span></div>
-      <div class="kpi"><b>${T.length ? (wins / T.length * 100).toFixed(1) + "%" : "—"}</b><span>勝率</span></div>
-      <div class="kpi"><b class="${T.length ? cls(totR) : ""}">${T.length ? fmtR(totR / T.length) : "—"}</b><span>每筆平均</span></div>
-      <div class="kpi"><b class="${T.length ? cls(totR) : ""}">${T.length ? fmtR(totR, 1) : "—"}</b><span>合計</span></div>
-    </div>
-    ${holdingsHtml(P)}
-    ${T.length ? `<div class="split">
-      <div class="card"><h2 id="tt"></h2><div class="facts" id="tf"></div>
-        <div class="seg" id="ccseg" style="margin:6px 0"></div>${CHART_LEGEND}
-        <div class="chart" id="cc"></div></div>
-      <div class="card"><h2>交易明細</h2><div class="tablewrap"><table>
-        <thead><tr><th>進場時間</th><th>商品</th><th>形態</th><th>方向</th><th class="num">同步</th><th class="num">結果</th><th>出場原因</th></tr></thead><tbody id="tb"></tbody></table></div></div>
-    </div>` : `<div class="card"><div class="empty">還沒有已結束的交易。機器人每 4 小時檢查一次，有交易結束後重新執行 <code>python dashboard.py</code> 就會出現在這裡。</div></div>`}
-    ${P.neg_frozen ? `<div class="card"><h2>事先標記的條件，實測表現如何</h2>
-      <p class="sub">這三種條件都是回測時發現「可能比較差」的情況，門檻在看到實測結果前就固定了。這裡只把模擬交易分組比較，沒有刪掉或跳過任何交易。回測為負的組合：${P.neg_frozen} 固定的 ${P.neg_count} 個（規則 × 週期 × 商品 × 形態）。擁擠：進場前資金費率顯示自己這一邊要多付 0.02% 以上。孤單訊號：強勢版進場時沒有其他商品同方向出現強勢訊號。</p>
-      <div class="tablewrap"><table><thead><tr><th>組別</th><th class="num">已結束筆數</th><th class="num">勝率</th><th class="num">每筆平均</th><th class="num">合計</th></tr></thead><tbody>${
-        [["回測為負的組合", t => t.neg_combo], ["其餘組合", t => !t.neg_combo],
-         ["資金費率明顯擁擠（≥ 0.02%）", t => t.crowding != null && t.crowding >= 0.02], ["資金費率不擁擠", t => t.crowding != null && t.crowding < 0.02],
-         ["強勢版，孤單訊號", t => t.pattern.includes("強勢") && !is4(t) && t.breadth === 1], ["強勢版，有其他商品同步", t => t.pattern.includes("強勢") && !is4(t) && t.breadth >= 2]
-        ].map(([name, keep]) => { const g = T.filter(keep), r = g.reduce((a, t) => a + t.R_net, 0);
-          return `<tr><td>${name}</td><td class="num">${g.length}</td><td class="num">${g.length ? (g.filter(t => t.R_net > 0.05).length / g.length * 100).toFixed(1) + "%" : "—"}</td><td class="num">${g.length ? `<span class="${cls(r)}">${fmtR(r / g.length)}</span>` : "—"}</td><td class="num">${g.length ? `<span class="${cls(r)}">${fmtR(r, 1)}</span>` : "—"}</td></tr>`; }).join("")
-      }</tbody></table></div>
-      <p class="note">筆數少的時候兩組的差距沒有意義，至少各累積一百筆再看。</p></div>` : ""}
-    <div class="card"><h2>出場方式比較：同一批強勢進場</h2>
-      <p class="sub">兩種帳戶的進場完全相同，只有出場不同。回測（68 個商品、2018 至今）裡四段停利的勝率高 4 到 5 個百分點、結果較平穩，每筆平均差不多；這裡看實測是否一樣。持倉中的不算在內，所以兩邊已結束的筆數可能不同。</p>
-      <div class="tablewrap"><table><thead><tr><th>出場方式</th><th class="num">已結束筆數</th><th class="num">勝率</th><th class="num">每筆平均</th><th class="num">合計</th></tr></thead><tbody>${
-        [["強勢版：全部部位用移動止損", t => t.pattern.includes("強勢") && !is4(t)], ["強勢四段：1R、2R、3R 各出 25%，餘倉移動止損", is4]
-        ].map(([name, keep]) => { const g = T.filter(keep), r = g.reduce((a, t) => a + t.R_net, 0);
-          return `<tr><td>${name}</td><td class="num">${g.length}</td><td class="num">${g.length ? (g.filter(t => t.R_net > 0.05).length / g.length * 100).toFixed(1) + "%" : "—"}</td><td class="num">${g.length ? `<span class="${cls(r)}">${fmtR(r / g.length)}</span>` : "—"}</td><td class="num">${g.length ? `<span class="${cls(r)}">${fmtR(r, 1)}</span>` : "—"}</td></tr>`; }).join("")
-      }</tbody></table></div></div>
-    <div class="half">
-      <div class="card"><h2>各形態模擬帳戶</h2><div class="tablewrap"><table>
-        <thead><tr><th>帳戶</th><th>方向</th><th class="num">筆數</th><th class="num">合計</th><th class="num">權益 USDT</th></tr></thead><tbody>${accRows || '<tr><td colspan="5" class="empty">尚無資料</td></tr>'}</tbody></table></div></div>
-      <div class="card"><h2>最近的進出場</h2><p class="sub">最新的在最上面。</p><div class="events">${events}</div></div>
-    </div>`;
-  if (P._flat && P._flat.length && $("#ptb")) {
-    const pickP = i => { const p = P._flat[i];
-      $("#pt").textContent = `${p.symbol} ${p.account}（${SIDE[p.side]}，持倉中）· 進場 ${fmtDT(p.t_entry)}`;
-      $("#pf").innerHTML = `<span>進場 <b>${fmtP(p.entry)}</b></span><span>現價 <b>${fmtP(p.last)}</b></span><span>目前止損 <b>${fmtP(p.stop)}</b>${p.stop !== p.stop0 ? `（原本 ${fmtP(p.stop0)}）` : ""}</span><span>目標 <b>${tgtText(p)}</b></span><span>浮動損益 <b class="${cls(p.R)}">${fmtR(p.R)}</b></span>${p.crowding != null ? `<span>資金費率擁擠度 <b>${sgn(p.crowding, 3)}%</b></span>` : ""}${p.crowding != null && p.funding_R != null ? `<span>資金費率累計 <b>${fmtR(-p.funding_R)}</b>（正數是收到，負數是付出）</span>` : ""}${btText(p)}${p.neg_combo ? "<span>屬於回測為負的組合</span>" : ""}`;
-      showChart($("#pcseg"), $("#pc"), { ...p, t_exit: null, exit: null });
-      document.querySelectorAll("#ptb tr").forEach(r => r.classList.toggle("on", +r.dataset.i === i)); };
-    $("#ptb").addEventListener("click", e => { const r = e.target.closest("tr"); if (r) pickP(+r.dataset.i); });
-    pickP(0);
-  }
-  if (!T.length) return;
-  $("#tb").innerHTML = T.map((t, i) => `<tr class="pick" data-i="${i}"><td>${fmtDT(t.t_entry)}</td><td>${t.symbol.replace("USDT", "")}</td><td>${t.pattern}</td><td>${SIDE[t.side]}</td><td class="num">${t.breadth ?? ""}</td><td class="num"><span class="${cls(t.R_net)}">${fmtR(t.R_net)}</span></td><td>${t.reason}</td></tr>`).reverse().join("");
-  const pickT = i => { const t = T[i];
-    $("#tt").textContent = `${t.symbol} ${t.pattern}（${SIDE[t.side]}）· ${fmtD(t.t_entry)}`;
-    $("#tf").innerHTML = `<span>進場 <b>${fmtP(t.entry)}</b></span><span>止損 <b>${fmtP(t.stop)}</b></span><span>目標 <b>${tgtText(t)}</b></span><span>出場 <b>${fmtP(t.exit)}</b>（${t.reason}）</span><span>結果 <b class="${cls(t.R_net)}">${fmtR(t.R_net)}</b></span><span>損益 <b>${fmtM(t.pnl)}</b> USDT</span><span>${+t.volume_confirmed ? "突破有放量" : "突破未放量"}</span>${t.breadth != null && t.breadth !== "" ? `<span>同方向強勢訊號的商品 <b>${t.breadth}</b> 個</span>` : ""}${t.crowding != null ? `<span>資金費率擁擠度 <b>${sgn(t.crowding, 3)}%</b></span>` : ""}${t.crowding != null && t.funding_R != null ? `<span>資金費率 <b>${fmtR(-t.funding_R)}</b>（正數是收到，負數是付出）</span>` : ""}${btText(t)}${t.neg_combo ? "<span>屬於回測為負的組合</span>" : ""}`;
-    showChart($("#ccseg"), $("#cc"), t);
-    document.querySelectorAll("#tb tr").forEach(r => r.classList.toggle("on", +r.dataset.i === i)); };
-  $("#tb").addEventListener("click", e => { const r = e.target.closest("tr"); if (r) pickT(+r.dataset.i); });
-  pickT(T.length - 1);
+  const P = DATA.paper, T = P.trades, view = $("#view"), pos = P.positions || [];
+  const secs = [["overview", "總覽"], ["positions", `持倉 ${pos.length}`], ["closed", `已結束 ${T.length}`], ["accounts", "帳戶"]];
+  view.innerHTML = `<div class="seg subnav">${secs.map(([k, l]) => `<button data-sec="${k}" aria-pressed="${PV.sec === k}">${l}</button>`).join("")}</div>
+    ${PV.sec === "overview" ? `<p class="sub">${P.started_at ? `從 ${fmtDT(P.started_at)}（台北時間）開始實測，機器人每 4 小時檢查一次。` : "模擬交易尚未啟動。"}</p>` : ""}
+    ${{ overview: paperOverview, positions: paperPositions, closed: paperClosed, accounts: paperAccounts }[PV.sec](P, T)}`;
+  view.querySelectorAll("button[data-sec]").forEach(b => b.addEventListener("click", () => { PV.sec = b.dataset.sec; renderPaper(); }));
+  history.replaceState(null, "", "#paper/" + PV.sec);
+  if (PV.sec === "overview" && $("#pcum")) { let c = 0; cumChart($("#pcum"), [{ name: "全部", color: C.all, pts: [[P.started_at, 0], ...[...T].sort((a, b) => a.t_exit - b.t_exit).map(t => [t.t_exit, c += t.R_net]), [Math.max(P.positions_updated || 0, ...T.map(t => t.t_exit)), c]] }]); }
+  if (PV.sec === "positions") bindPositions(P);
+  if (PV.sec === "closed") bindClosed(P, T);
 }
 
-$("#meta").textContent = `16 種 K 線形態，以 4 小時線為主，強勢版另有 8 小時、12 小時、日線。共 ${N_ALL} 個商品。資料產生於 ${fmtDT(DATA.generated)}（台北時間）。全部是回測或模擬資金，沒有真實下單。`;
-let current = DATA.paper.positions_updated ? "paper" : "history";      // open on the live paper test when it is running
-const render = k => { current = k; document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.k === k)); (k === "history" ? renderHistory : renderPaper)(); };
+$("#meta").textContent = `16 種 K 線形態 · ${N_ALL} 個商品 · 4H、8H、12H、日線 · 更新於 ${fmtDT(DATA.paper.positions_updated || DATA.generated)}（台北時間）`;
+const [h0, h1] = location.hash.slice(1).split("/");
+let current = h0 === "history" || h0 === "paper" ? h0 : DATA.paper.positions_updated ? "paper" : "history";      // open on the live paper test when it is running
+if (current === "paper" && ["overview", "positions", "closed", "accounts"].includes(h1)) PV.sec = h1;
+const render = k => { current = k; document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.k === k));
+  if (k === "history") { history.replaceState(null, "", "#history"); renderHistory(); } else renderPaper(); };
 document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => render(b.dataset.k)));
 render(current);
-let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => render(current), 150); });
+let rz, lastW = innerWidth;                        // redraw charts when the width changes (not when a phone's address bar hides)
+addEventListener("resize", () => { if (innerWidth === lastW) return; lastW = innerWidth; clearTimeout(rz); rz = setTimeout(() => render(current), 150); });
 </script>
 </body>
 </html>
