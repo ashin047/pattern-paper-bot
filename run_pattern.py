@@ -18,6 +18,7 @@ from __future__ import annotations
 import bisect
 import csv
 import json
+import os
 import socket
 import subprocess
 import sys
@@ -117,26 +118,47 @@ def candles_4h(rows):
     return out
 
 
+def _other_funding(name):
+    """Recent funding prints from exchanges that are reachable where Binance futures is blocked: OKX, then Bitget."""
+    try:
+        got = _get(f"https://www.okx.com/api/v5/public/funding-rate-history?instId={name}-USDT-SWAP&limit=100", tries=2)
+        if isinstance(got, dict) and got.get("code") == "0" and got.get("data"):
+            return [(int(r["fundingTime"]), float(r["fundingRate"])) for r in got["data"]]
+    except Exception:
+        pass
+    try:
+        got = _get(f"https://api.bitget.com/api/v2/mix/market/history-fund-rate?symbol={name}USDT&productType=usdt-futures&pageSize=100", tries=2)
+        if isinstance(got, dict) and got.get("code") == "00000" and got.get("data"):
+            return [(int(r["fundingTime"]), float(r["fundingRate"])) for r in got["data"]]
+    except Exception:
+        pass
+    return []
+
+
 def funding_series(name):
-    """Funding history of one coin (times, rates), topped up with the latest prints. Failures just keep what is on disk."""
+    """Funding history of one coin (times, rates), topped up with the latest prints.
+    Binance is tried first; where it is blocked, OKX (then Bitget) is used instead. Failures keep what is on disk."""
     path = FUND / f"{name}.csv"
     rows = []
     if path.exists():
         with path.open() as f:
             rows = [(int(a), float(b)) for a, b in csv.reader(f)]
-    if FUND_STATE["down"]:                             # the endpoint already failed this cycle: do not retry 68 times
-        return [a for a, _ in rows], [b for _, b in rows]
-    try:
-        start = rows[-1][0] + 1 if rows else 0
-        got = _get(f"{FUND_API}?symbol={FUT_NAME.get(name, name)}USDT&startTime={start}&limit=1000", tries=2)
-        new = [(int(r["fundingTime"]), float(r["fundingRate"])) for r in got] if isinstance(got, list) else []
-        if new:
-            FUND.mkdir(exist_ok=True)
-            with path.open("a", newline="") as f:
-                csv.writer(f).writerows(new)
-            rows += new
-    except Exception:
-        FUND_STATE["down"] = True
+    new = []
+    if not FUND_STATE["down"]:
+        try:
+            start = rows[-1][0] + 1 if rows else 0
+            got = _get(f"{FUND_API}?symbol={FUT_NAME.get(name, name)}USDT&startTime={start}&limit=1000", tries=2)
+            new = [(int(r["fundingTime"]), float(r["fundingRate"])) for r in got] if isinstance(got, list) else []
+        except Exception:
+            FUND_STATE["down"] = True                 # blocked or unreachable: use the other exchanges for the rest of this cycle
+    if FUND_STATE["down"]:
+        last = rows[-1][0] if rows else 0
+        new = sorted(x for x in _other_funding(name) if x[0] > last)
+    if new:
+        FUND.mkdir(exist_ok=True)
+        with path.open("a", newline="") as f:
+            csv.writer(f).writerows(new)
+        rows += new
     return [a for a, _ in rows], [b for _, b in rows]
 
 
@@ -236,14 +258,15 @@ def main():
 
     while True:
         holding, data, multi, positions, fund = [], {}, {}, [], {}
-        FUND_STATE["down"] = False
+        FUND_STATE["down"] = os.environ.get("FUNDING_SOURCE") == "other"     # set to skip Binance (for testing the fallback)
 
         def annotate(sym, T):
             """Funding: how crowded the trade's own side was at entry, and funding paid so far (in R)."""
             ts_f, rates = fund.get(sym, ([], []))
             i = bisect.bisect_right(ts_f, T["t"])
-            fresh = i >= 3 and T["t"] - ts_f[i - 1] <= 2 * 86_400_000     # stale funding data says nothing about this entry
-            T["crowd"] = T["s"] * (sum(rates[i - 3:i]) / 3 - NEUTRAL) if fresh else None
+            day = 86_400_000                           # crowding looks at the 24 hours before entry, whatever the funding interval
+            fresh = i >= 1 and ts_f[0] <= T["t"] - day and T["t"] - ts_f[i - 1] <= day // 2
+            T["crowd"] = T["s"] * (sum(rates[bisect.bisect_right(ts_f, T["t"] - day):i]) / 3 - NEUTRAL) if fresh else None
             end = T.get("t_exit") or int(time.time() * 1000)
             T["fund_R"] = T["s"] * sum(rates[i:bisect.bisect_right(ts_f, end)]) * T["entry"] / abs(T["entry"] - T["stop"])
 

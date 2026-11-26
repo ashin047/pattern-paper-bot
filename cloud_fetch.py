@@ -94,7 +94,7 @@ def main():
             got += funding(s) == "downloaded"
         print(f"資金費率：{sum((FUND / f'{s}.csv').exists() for s in COINS)} 個商品有資料（新下載 {got} 個）")
     except Exception as e:
-        print(f"資金費率這一輪抓不到（{type(e).__name__}），擁擠度與資金成本會留空，不影響進出場。")
+        print(f"Binance 的資金費率從這裡連不到（{type(e).__name__}）；機器人會改用 OKX、Bitget 的資金費率。")
 
 
 if __name__ == "__main__":
